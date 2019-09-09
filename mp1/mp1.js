@@ -1,104 +1,77 @@
+// Model data located in separate files.
 
-/** @global Array of block I vertex position data */
-var vertex_data = [
-	0.96784, 0.0, 1.137038,
-	-0.96784, 0.0, 1.137038,
-	0.96784, 0.0, -1.152229,
-	-0.96784, 0.0, -1.152229,
-	0.96784, 0.0, -2.494854,
-	-0.96784, 0.0, -2.494854,
-	0.96784, 0.0, 2.494854,
-	-0.96784, 0.0, 2.494854,
-	1.719309, 0.0, 1.137038,
-	-1.719309, 0.0, 1.137038,
-	1.719309, 0.0, -1.152229,
-	-1.719309, 0.0, -1.152229,
-	1.719309, 0.0, -2.494854,
-	-1.719309, 0.0, -2.494854,
-	1.719309, 0.0, 2.494854,
-	-1.719309, 0.0, 2.494854,
-	-0.96784, 1.026238, 2.494854,
-	0.96784, 1.026238, 2.494854,
-	0.96784, 1.026238, 1.137038,
-	-1.719309, 1.026238, 1.137038,
-	-1.719309, 1.026238, 2.494854,
-	-0.96784, 1.026238, 1.137038,
-	0.96784, 1.026238, -1.152229,
-	-0.96784, 1.026238, -1.152229,
-	0.96784, 1.026238, -2.494854,
-	-0.96784, 1.026238, -2.494854,
-	1.719309, 1.026238, 2.494854,
-	1.719309, 1.026238, 1.137038,
-	-1.719309, 1.026238, -2.494854,
-	-1.719309, 1.026238, -1.152229,
-	1.719309, 1.026238, -1.152229,
-	1.719309, 1.026238, -2.494854
-];
-
-/** @global Array of block I polygon index data */
-var poly_data = [
-	4, 12, 10,
-	1, 3, 2,
-	3, 5, 4,
-	7, 1, 0,
-	7, 15, 9,
-	0, 8, 14,
-	3, 11, 13,
-	24, 22, 30,
-	21, 18, 22,
-	23, 22, 24,
-	16, 17, 18,
-	16, 21, 19,
-	18, 17, 26,
-	23, 25, 28,
-	8, 0, 18,
-	3, 1, 21,
-	6, 14, 26,
-	13, 11, 29,
-	4, 5, 25,
-	11, 3, 23,
-	10, 12, 31,
-	0, 2, 22,
-	5, 13, 28,
-	12, 4, 24,
-	14, 8, 27,
-	7, 6, 17,
-	2, 10, 30,
-	15, 7, 16,
-	9, 15, 20,
-	1, 9, 19
-];
-
-/** @global The WebGL buffer holding the vertex positions */
-var vertexPositionBuffer;
-/** @global The WebGL buffer holding the vertex indices */
-var vertexIndexBuffer;
+var selectedDemo = "teapot";
 
 
+var animationID;
 /**
  * Startup function called on canvas load.
  */
 function startup(){
-    var logoCanvas = document.getElementById("myGLCanvas");
-    var logoGL = WebGLUtils.setupWebGL(logoCanvas);
+    var radiobuttons = document.getElementsByTagName("input");
+    for(let button of radiobuttons){
+        button.onclick = function() {
+            selectedDemo = button.value;
+            if(animationID != null){
+                cancelAnimationFrame(animationID);
+                runDemo();
+            }
+        };
+    }
 
-    var logoShaderProgram; // block-I shader program
-
-    setupShaders(logoShaderProgram, logoGL);
-
-
+    runDemo();
 
 }
 
+
+function runDemo(){
+    var currentDemo = selectedDemo;
+    var vertex_data, poly_data;
+    if(currentDemo == "teapot"){
+        vertex_data = teapot_vertex_data;
+        poly_data = teapot_poly_data;
+    } else if(currentDemo == "3dlogo"){
+        vertex_data = logo3d_vertex_data;
+        poly_data = logo3d_poly_data;
+    } else {
+        vertex_data = logo3d_vertex_data;
+        poly_data = logo3d_poly_data;
+    }
+
+
+    var logoCanvas = document.getElementById("myGLCanvas");
+    var logoGL = WebGLUtils.setupWebGL(logoCanvas);
+    logoGL.clearColor(0.8, 0.8, 0.8, 1.0);
+
+    var logoShaderProgram; // block-I shader program
+    var vertexPositionBuffer; // WebGL buffer holding vertex positions
+    var vertexIndexBuffer; // WebGL buffer holding indices
+
+    logoShaderProgram = setupShaders(logoGL);
+    if(logoShaderProgram == null){
+        alert("shader program is null");
+    }
+
+    // Setup buffers and extract references
+    var bufferResult = setupBuffers(vertex_data, poly_data, logoGL);
+    vertexPositionBuffer = bufferResult.positions;
+    vertexIndexBuffer = bufferResult.indices;
+
+    function render(now) {
+        draw_logo(now/200, poly_data.length, vertexPositionBuffer, vertexIndexBuffer, logoShaderProgram, logoGL);
+        animationID = requestAnimationFrame(render);
+    }
+    animationID = requestAnimationFrame(render);
+}
 
 
 /**
  * Loads and compiles the shaders, as well as attaching them to a new shader program.
  * Much of this is borrowed from the HelloColor/HelloTriangle example.
- * @param {WebGLProgram} shaderProgram Reference to the program it will add the shaders to.
  * @param {WebGLRenderingContext} gl Reference to the WebGL context
+ * @returns {WebGLProgram} The newly created shader program.
  */
-function setupShaders(shaderProgram, gl) {
+function setupShaders(gl) {
     vertexShader = loadShader("basic-shader-vs", gl);
     fragmentShader = loadShader("basic-shader-fs", gl);
     
@@ -106,7 +79,7 @@ function setupShaders(shaderProgram, gl) {
         alert("wtf");
     }
 
-    shaderProgram = gl.createProgram();
+    var shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
@@ -120,6 +93,10 @@ function setupShaders(shaderProgram, gl) {
     shaderProgram.localTransform = gl.getUniformLocation(shaderProgram, "u_localTransform");
     shaderProgram.modelview = gl.getUniformLocation(shaderProgram, "u_modelview");
     shaderProgram.projection = gl.getUniformLocation(shaderProgram, "u_projection");
+    shaderProgram.logoColor1 = gl.getUniformLocation(shaderProgram, "u_logo_color1");
+    shaderProgram.logoColor2 = gl.getUniformLocation(shaderProgram, "u_logo_color2");
+
+    return shaderProgram;
 }
 
 /**
@@ -177,21 +154,22 @@ function loadShader(id, gl){
  *  Much of this is borrowed from the HelloColor/HelloTriangle example.
  * @param {array} positionDataArray Array of vertices (positions)
  * @param {array} indexDataArray Array of indices for faces
- * @param {WebGLBuffer} vertexPositionBuffer WebGLBuffer for vertex position data
- * @param {WebGLBuffer} vertexIndexBuffer WebGLBuffer for vertex index data
  * @param {WebGLRenderingContext} gl Reference to the WebGL context
+ * @returns {object} Object with the position and index WebGLBuffers
  */
-function setupBuffers(positionDataArray, indexDataArray, vertexPositionBuffer, vertexIndexBuffer, gl){
+function setupBuffers(positionDataArray, indexDataArray, gl){
 
     // Setup the position buffer.
-    vertexPositionBuffer = gl.createBuffer();
+    var vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positionDataArray), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positionDataArray), gl.STATIC_DRAW);
 
     // Setup the index buffer.
-    vertexIndexBuffer = gl.createBuffer();
+    var vertexIndexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(modelIndices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexDataArray), gl.STATIC_DRAW);
+
+    return {positions: vertexPositionBuffer, indices: vertexIndexBuffer};
 }
 
 
@@ -209,7 +187,7 @@ function calculateMatrices(angle, shaderProgram, gl){
     // Create projection matrix
     var projectionMatrix = glMatrix.mat4.create();
     // Calculate perspective matrix with FOV, aspect ratio, and near/far clipping
-    glMatrix.mat4.perspective(projectionMatrix, Math.PI/5, gl.canvas.width/ gl.canvas.height, 15,150);
+    glMatrix.mat4.perspective(projectionMatrix, Math.PI/5, gl.canvas.width/ gl.canvas.height, 5,25);
 
     // Viewing position
     var eyePos = glMatrix.vec3.fromValues(10,10,10);
@@ -224,5 +202,39 @@ function calculateMatrices(angle, shaderProgram, gl){
     gl.uniformMatrix4fv(shaderProgram.modelview, false, modelViewMatrix);
     gl.uniformMatrix4fv(shaderProgram.projection, false, projectionMatrix);
     gl.uniformMatrix4fv(shaderProgram.localTransform, false, localTransforms);
+}
+
+/**
+ * Draws the logo.
+ * @param {number} time Current time variable used for animation
+ * @param {number} num_polys Number of triangles to draw
+ * @param {WebGLBuffer} vertexPositionBuffer WebGLBuffer for vertex position data
+ * @param {WebGLBuffer} vertexIndexBuffer WebGLBuffer for vertex index data
+ * @param {WebGLProgram} shaderProgram Reference to the shader program it will update uniform matrices for
+ * @param {WebGLRenderingContext} gl Reference to the WebGL context
+ */
+function draw_logo(time, num_polys, vertexPositionBuffer, vertexIndexBuffer, shaderProgram, gl){
+    calculateMatrices(time/10, shaderProgram, gl);
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthRange(0, 1.0);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearDepth(1);
+
+    // Set some fun colors!
+    gl.uniform4fv(shaderProgram.logoColor1, [1.0, 0.4, 0.0, 1.0]);
+    gl.uniform4fv(shaderProgram.logoColor2, [0.0, 0.7, 1.0, 1.0]);
+
+    // Bind the vertex position buffer and enable the attrib array with the correct pointer settings
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+    // Bind the index buffer (wow, that's easy!)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
+    gl.drawElements(gl.TRIANGLES, num_polys, gl.UNSIGNED_SHORT, 0);
+    
 }
 

@@ -21,29 +21,31 @@ void main(void) {
 <script id="basic-shader-fs" type="x-shader/x-fragment">
 precision mediump float;
 
-uniform vec4 u_logo_color;
+uniform vec4 u_logo_color1;
+uniform vec4 u_logo_color2;
 
 void main(void) {
-    float dist = length(gl_FragCoord.z);
-
-    gl_FragColor = mix(u_logo_color, vec4(1.0, 1.0, 1.0, 1.0), clamp(dist, 0.0, 1.0));
+    float dist = (gl_FragCoord.z - 0.85) * 15.0;
+    gl_FragColor = mix(u_logo_color1, u_logo_color2, dist);
+    //gl_FragColor= vec4(dist, dist, dist, 1.0);
+    //gl_FragColor = u_logo_color;
  }
 </script>
 
 <body onload="startup();">
-  <canvas id="myGLCanvas" width="1000" height="1000" ></canvas>
+  <canvas id="myGLCanvas" width="750" height="750" ></canvas>
   <div id="uiContainer">
     <div id="ui">
-      <div class="slidecontainer">
-        <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
-      </div>
-      <div class="slidecontainer2">
-        <input type="range" min="1" max="100" value="50" class="slider" id="myRange2">
-      </div>
+      <div class="radiobutton">
+        <label for="demoselect">Demo selection: </label>
+        <input type="radio" name="demotype" value="teapot" checked="checked">Teapot Demo</input>
+        <input type="radio" name="demotype" value="3dlogo" >3D Logo Demo</input>
     </div>
   </div>
 </body>
 
+<script src="teapot.js"></script>
+<script src="3dlogo.js"></script>
 <script src="gl-matrix.js"></script>   
 <script src="webgl-utils.js"></script>   
 <script src="mp1.js"></script>   
