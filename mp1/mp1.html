@@ -1,0 +1,51 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>MP1</title>
+<meta charset="utf-8">
+</head>
+ 
+<script id="basic-shader-vs" type="x-shader/x-vertex">
+
+attribute vec4 aVertexPosition;
+
+uniform mat4 u_modelview;
+uniform mat4 u_projection;
+uniform mat4 u_localTransform;
+
+void main(void) {
+    gl_Position = u_projection * u_modelview * u_localTransform * aVertexPosition;
+}
+</script>
+  
+<script id="basic-shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 u_logo_color;
+
+void main(void) {
+    float dist = length(gl_FragCoord.z);
+
+    gl_FragColor = mix(u_logo_color, vec4(1.0, 1.0, 1.0, 1.0), clamp(dist, 0.0, 1.0));
+ }
+</script>
+
+<body onload="startup();">
+  <canvas id="myGLCanvas" width="1000" height="1000" ></canvas>
+  <div id="uiContainer">
+    <div id="ui">
+      <div class="slidecontainer">
+        <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+      </div>
+      <div class="slidecontainer2">
+        <input type="range" min="1" max="100" value="50" class="slider" id="myRange2">
+      </div>
+    </div>
+  </div>
+</body>
+
+<script src="gl-matrix.js"></script>   
+<script src="webgl-utils.js"></script>   
+<script src="mp1.js"></script>   
+
+</html>
