@@ -32,23 +32,72 @@ void main(void) {
  }
 </script>
 
-<body onload="startup();">
-  <canvas id="myGLCanvas" width="750" height="750" ></canvas>
+<script id="2d-basic-shader-vs" type="x-shader/x-vertex">
+
+  attribute vec4 aVertexPosition;
+  uniform mat4 u_localTransform;
+  
+  void main(void) {
+      gl_Position = u_localTransform * aVertexPosition;
+  }
+  </script>
+    
+  <script id="2d-basic-shader-fs" type="x-shader/x-fragment">
+  precision mediump float;
+  
+  uniform vec4 u_logo_color;
+  
+  void main(void) {
+      gl_FragColor = u_logo_color;
+   }
+  </script>
+
+<body style = "font-family: roboto mono" onload="startup();">
+  <h1 style = "font-family: roboto mono">
+    CS418 MP1
+  </h1>
+  <p style = "font-family: roboto mono">
+    Finn Sinclair - 2018
+  </p>
+  <p>
+    The 3D model data is generated using a homemade .OBJ file parser written in Python that generates Javascript array initializers.
+    The models were created in Blender 2.8.
+  </p>
+  <p>
+    It's a big pain to work around the limitation of a lack of local webserver...
+    I usually develop WebGL sketches with a basic webserver running locally and then
+    connect to localhost, because it allows easy loading of local assets for textures and models.
+    I'd be curious if we are going to learn about CORS requests later in the semester for loading assets, or if we will eventually
+    turn in our MPs with the assumption they'll be running on a localhost server.
+  </p>
+  <ul>
+    <li>The 2D logo demo performs a few transformations: the vertex shader performs the scaling and rotation,
+      while the Javascript performs the "wiggle" by dynamically changing the vertex buffer over time.
+      The 2D logo mesh is <i>heavily</i> subdivided to make the "wiggle" effect much smoother.</li>
+    <li>The 3D logo demo performs all transformations in the vertex shader, including the local transformation (the two rotations), the modelview transformation, and the perspective projection. It also uses a fragment shader that utilizes the depth buffer to interpolate between two colors.</li>
+    <li>The Teapot demo is the Utah Teapot shaded in a similar way to the 3D logo demo.</li>
+  </ul>
   <div id="uiContainer">
     <div id="ui">
       <div class="radiobutton">
         <label for="demoselect">Demo selection: </label>
-        <input type="radio" name="demotype" value="teapot" checked="checked">Teapot Demo</input>
+        <input type="radio" name="demotype" value="2dlogo" checked="checked">2D Logo Demo</input>
         <input type="radio" name="demotype" value="3dlogo" >3D Logo Demo</input>
-        <input type="radio" name="demotype" value="2dlogo" >2D Logo Demo</input>
+        <input type="radio" name="demotype" value="teapot" >Teapot Demo</input>
+        
     </div>
   </div>
+  <canvas id="myGLCanvas" width="750" height="750" ></canvas>
 </body>
 
-<script src="teapot.js"></script>
-<script src="3dlogo.js"></script>
+<script src="teapot_data.js"></script>
+<script src="2dlogo_data.js"></script>
+<script src="3dlogo_data.js"></script>
 <script src="gl-matrix.js"></script>   
-<script src="webgl-utils.js"></script>   
+<script src="webgl-utils.js"></script>
+<script src="helpers.js"></script>
+<script src="2dlogo_demo.js"></script>   
+<script src="3dlogo_demo.js"></script>   
 <script src="mp1.js"></script>   
 
 </html>
