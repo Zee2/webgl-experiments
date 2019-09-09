@@ -19,7 +19,7 @@ logo2d_demo = function() {
 
         var logoCanvas = document.getElementById("myGLCanvas");
         var logoGL = WebGLUtils.setupWebGL(logoCanvas);
-        logoGL.clearColor(0.8, 0.8, 0.8, 1.0);
+        logoGL.clearColor(0.265, 0.265, 0.265, 1.0);
 
         var logoShaderProgram; // block-I shader program
         var vertexPositionBuffer; // WebGL buffer holding vertex positions

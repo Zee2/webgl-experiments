@@ -1,0 +1,12 @@
+.uiContainer {
+    text-align: center;
+    margin: 0 auto;
+}
+
+body {
+    margin: auto;
+    width: 800px;
+    padding-left: 50px;
+    padding-right: 50px;
+    padding-top: 20px;
+}
