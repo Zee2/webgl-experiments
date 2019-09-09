@@ -26,8 +26,8 @@ uniform vec4 u_logo_color1;
 uniform vec4 u_logo_color2;
 
 void main(void) {
-    float dist = (gl_FragCoord.z - 0.85) * 15.0;
-    gl_FragColor = mix(u_logo_color1, u_logo_color2, dist);
+    float dist = (gl_FragCoord.z - 0.6) * 7.0;
+    gl_FragColor = mix(u_logo_color2, u_logo_color1, dist);
     //gl_FragColor= vec4(dist, dist, dist, 1.0);
     //gl_FragColor = u_logo_color;
  }
@@ -75,6 +75,10 @@ void main(void) {
     <li>The 2D logo demo performs a few transformations: the vertex shader performs the scaling and rotation,
       while the Javascript performs the "wiggle" by dynamically changing the vertex buffer over time.
       The 2D logo mesh is <i>heavily</i> subdivided to make the "wiggle" effect much smoother.</li>
+    <li>
+      While it may not look like it, the 2D logo demo actually shows off multi-material rendering: the OBJ parser understands the
+      multiple material groups, and the renderer issues separate drawcalls for each material. (No vertex color buffer is used, saving memory!)
+    </li>
     <li>The 3D logo demo performs all transformations in the vertex shader, including the local transformation (the two rotations), the modelview transformation, and the perspective projection. It also uses a fragment shader that utilizes the depth buffer to interpolate between two colors.</li>
     <li>The Teapot demo is the Utah Teapot shaded in a similar way to the 3D logo demo.</li>
   </ul>
@@ -88,7 +92,7 @@ void main(void) {
         
     </div>
   </div>
-  <canvas id="myGLCanvas" width="750" height="750" ></canvas>
+  <canvas id="myGLCanvas" width="500" height="500" ></canvas>
 </body>
 
 <script src="teapot_data.js"></script>

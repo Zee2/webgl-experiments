@@ -62,7 +62,7 @@ logo3d_demo = function() {
         glMatrix.mat4.perspective(projectionMatrix, Math.PI/5, gl.canvas.width/ gl.canvas.height, 5,25);
 
         // Viewing position
-        var eyePos = glMatrix.vec3.fromValues(10,10,10);
+        var eyePos = glMatrix.vec3.fromValues(7,7,7);
         glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,0,0], [0,1,0]);
 
         // Calculate some fun local transforms
