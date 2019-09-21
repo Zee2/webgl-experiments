@@ -14,6 +14,7 @@ logo2d_demo = function() {
 
     /**
      * Runs the 2D logo demo.
+     * No args, no return value
      */
     var runDemo = function(){
 

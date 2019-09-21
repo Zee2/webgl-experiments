@@ -12,6 +12,7 @@ logo3d_demo = function() {
     /**
      * Runs the 3D logo demo.
      * @param {bool} useTeapot Whether we should render the teapot instead (lol)
+     * @returns void
      */
     var runDemo = function(useTeapot){
 
