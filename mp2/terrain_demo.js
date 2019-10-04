@@ -13,7 +13,7 @@ document.body.onmouseup = () => {
     mouseState--
 }
 
-document.body.ontouchstart = () => {
+document.body.ontouchend = () => {
     mouseState--
 }
 
@@ -22,7 +22,7 @@ var lastMouse = [0,0]
 document.body.onmousedown = (e) => {
     mouseState++
 }
-document.body.ontouchend = (e) => {
+document.body.ontouchstart = (e) => {
     mouseState++
 }
 var canvas = document.getElementById("myGLCanvas");
@@ -30,7 +30,17 @@ document.onmousemove = function(e){
     updateMouse(e);
 }
 document.ontouchmove = function(e){
-    updateMouse(e);
+    updateTouch(e);
+}
+
+function updateTouch(e){
+    if(mouseState){
+        mouseX += e.touches[0].clientX - lastMouse[0];
+        mouseY += e.touches[0].clientY - lastMouse[1];
+        mouseVelX += (e.touches[0].clientX - lastMouse[0]) * 0.1;
+        mouseVelY += (e.touches[0].clientY - lastMouse[1]) * -0.4;
+    }
+    lastMouse = [e.clientX, e.clientY];
 }
 
 function updateMouse(e){
