@@ -40,7 +40,7 @@ function updateTouch(e){
         mouseVelX += (e.touches[0].clientX - lastMouse[0]) * 0.1;
         mouseVelY += (e.touches[0].clientY - lastMouse[1]) * -0.4;
     }
-    lastMouse = [e.clientX, e.clientY];
+    lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
 }
 
 function updateMouse(e){
