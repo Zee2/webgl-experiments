@@ -4,6 +4,7 @@
 }
 
 body {
+    position: fixed;
     margin: auto;
     width: 800px;
     padding-left: 50px;

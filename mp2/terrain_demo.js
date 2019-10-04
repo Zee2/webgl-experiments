@@ -23,6 +23,7 @@ document.body.onmousedown = (e) => {
     mouseState++
 }
 document.body.ontouchstart = (e) => {
+    updateTouch(e);
     mouseState++
 }
 var canvas = document.getElementById("myGLCanvas");
