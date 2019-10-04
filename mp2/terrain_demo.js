@@ -35,12 +35,12 @@ document.ontouchmove = function(e){
 
 function updateTouch(e){
     if(mouseState){
-        mouseX += e.touches[0].clientX - lastMouse[0];
-        mouseY += e.touches[0].clientY - lastMouse[1];
-        mouseVelX += (e.touches[0].clientX - lastMouse[0]) * 0.1;
-        mouseVelY += (e.touches[0].clientY - lastMouse[1]) * -0.4;
+        mouseX += e.touches[0].pageX - lastMouse[0];
+        mouseY += e.touches[0].pageY - lastMouse[1];
+        mouseVelX += (e.touches[0].pageX - lastMouse[0]) * 0.1;
+        mouseVelY += (e.touches[0].pageY - lastMouse[1]) * -0.4;
     }
-    lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
+    lastMouse = [e.touches[0].pageX, e.touches[0].pageY];
 }
 
 function updateMouse(e){
