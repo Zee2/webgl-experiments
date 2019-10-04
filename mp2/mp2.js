@@ -3,6 +3,8 @@
 /** @global ID of animation currently running */
 var animationID;
 
+
+
 /**
  * Startup function called on canvas load.
  * @params void
@@ -16,10 +18,10 @@ function startup(){
             switchDemo(button.value);
         };
     }
-    if(logo3d_demo.runDemo == null){
+    if(terrain_demo.runDemo == null){
         alert("null");
     }
-    switchDemo("2dlogo");
+    switchDemo("terrain");
 }
 
 /**
@@ -31,11 +33,9 @@ function switchDemo(demo){
     if(animationID != null){
         cancelAnimationFrame(animationID);
     }
-    if(demo == "teapot"){
-        logo3d_demo.runDemo(true);
-    } else if(demo == "3dlogo"){
-        logo3d_demo.runDemo(false);
+    if(demo == "terrain"){
+        terrain_demo.runDemo();
     } else {
-        logo2d_demo.runDemo();
+        terrain_demo.runDemo();
     }
 }
