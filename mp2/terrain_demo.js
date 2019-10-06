@@ -99,6 +99,8 @@ terrain_demo = function() {
             rotateY = clamp(rotateY, 500, 5000);
             mouseVelY += -mouseVelY * 0.05;
             draw(rotateX, rotateY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
+            logoGL.uniform1f(terrainShaderProgram.shiny, document.getElementById("shininess").value);
+            logoGL.uniform1f(terrainShaderProgram.time, now);
             animationID = requestAnimationFrame(render);
         }
         animationID = requestAnimationFrame(render);
@@ -128,21 +130,29 @@ terrain_demo = function() {
         
         //alert("eyepos: " + eyePos);
 
-        glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,1,0], [0,1,0]);
+        
         //glMatrix.mat4.translate(matrix, matrix, [0, 0, 5]);
         
 
-        var local = glMatrix.mat4.create();
+        //var local = glMatrix.mat4.create();
         //glMatrix.mat4.rotateX(local, local, x/200);
-        glMatrix.mat4.rotateY(local, local, x/200);
-        glMatrix.mat4.translate(local, local, [-(terrain_dim * 0.1 * 0.5), 0, -(terrain_dim * 0.1 * 0.5)]);
-        //
+
         
+        glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,1,0], [0,1,0]);
+        glMatrix.mat4.rotateY(modelViewMatrix, modelViewMatrix, x/200);
+        glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-(terrain_dim * 0.1 * 0.5), 0, -(terrain_dim * 0.1 * 0.5)]);
+        //
+
+
+        var normalMatrix = glMatrix.mat3.create();
+        glMatrix.mat3.fromMat4(normalMatrix, modelViewMatrix);
+        glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+        glMatrix.mat3.invert(normalMatrix, normalMatrix);
         
         //glMatrix.mat4.scale(local, local, [0.5, 0.5, 0.5]);
         gl.uniformMatrix4fv(shaderProgram.modelview, false, modelViewMatrix);
         gl.uniformMatrix4fv(shaderProgram.projection, false, projectionMatrix);
-        gl.uniformMatrix4fv(shaderProgram.localTransform, false, local);
+        gl.uniformMatrix3fv(shaderProgram.normalMatrix, false, normalMatrix);
     };
     
     
@@ -169,11 +179,13 @@ terrain_demo = function() {
         shaderProgram.scaleFactor = gl.getUniformLocation(shaderProgram, "u_scaleFactor");
         shaderProgram.scaleFactor2 = gl.getUniformLocation(shaderProgram, "u_scaleFactor2");
         shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-        shaderProgram.localTransform = gl.getUniformLocation(shaderProgram, "u_localTransform");
         shaderProgram.modelview = gl.getUniformLocation(shaderProgram, "u_modelview");
         shaderProgram.projection = gl.getUniformLocation(shaderProgram, "u_projection");
+        shaderProgram.normalMatrix = gl.getUniformLocation(shaderProgram, "u_normalMatrix");
         shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor"); 
         shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+        shaderProgram.time = gl.getUniformLocation(shaderProgram, "time");
+        shaderProgram.shiny = gl.getUniformLocation(shaderProgram, "u_shininess");
 
         return shaderProgram;
     };

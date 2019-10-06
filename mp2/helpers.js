@@ -169,6 +169,22 @@ function setupBuffers(drawMode, gl){
             vertexNormals.push(normal_sum[0], normal_sum[1], normal_sum[2]);
         }
     }
+    
+    /*
+    vertexNormals.length = 0;
+    modelData.length = 0;
+    modelIndices.length = 0;
+
+    sphereFromSubdivision(4, modelData, modelIndices, vertexNormals);
+    console.log(modelData.length/3 + " vertices");
+    console.log(modelIndices.length/3 + " triangles");
+
+    for(var i = 0; i < modelData.length; i+=3){
+        modelData[i] += terrain_dim*0.05;
+        modelData[i+1] += 1.2;
+        modelData[i+2] += terrain_dim*0.05;
+    }
+    */
 
     // Setup the position buffer.
     var vertexPositionBuffer = gl.createBuffer();

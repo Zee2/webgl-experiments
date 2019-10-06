@@ -10,17 +10,6 @@ var animationID;
  * @params void
  */
 function startup(){
-
-    // Grab the radiobuttons and add callback lambdas
-    var radiobuttons = document.getElementsByTagName("input");
-    for(let button of radiobuttons){
-        button.onclick = function() {
-            switchDemo(button.value);
-        };
-    }
-    if(terrain_demo.runDemo == null){
-        alert("null");
-    }
     switchDemo("terrain");
 }
 
