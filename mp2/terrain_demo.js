@@ -1,61 +1,27 @@
 /**
- * @fileoverview This file contains the 3D logo demo.
+ * @fileoverview This file contains the 3D terrain demo with blinn-phong shading.
  */
 
-var mouseX = 0;
-var mouseY = 150;
-
-var mouseVelX = 0;
-var mouseVelY = 0;
-
-var mouseState = 0;
-document.body.onmouseup = () => {
-    mouseState--
-}
-
-document.body.ontouchend = () => {
-    mouseState--
-}
-
-var lastMouse = [0,0]
-
-document.body.onmousedown = (e) => {
-    mouseState++
-}
-document.body.ontouchstart = (e) => {
-    lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
-    mouseState++
-}
-var canvas = document.getElementById("myGLCanvas");
-document.onmousemove = function(e){
-    updateMouse(e);
-}
-document.ontouchmove = function(e){
-    updateTouch(e);
-}
-
-function updateTouch(e){
-    if(mouseState){
-        mouseX += e.touches[0].clientX - lastMouse[0];
-        mouseY += e.touches[0].clientY - lastMouse[1];
-        mouseVelX += (e.touches[0].clientX - lastMouse[0]) * 0.1;
-        mouseVelY += (e.touches[0].clientY - lastMouse[1]) * -0.4;
-    }
-    lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
-}
-
-function updateMouse(e){
-    if(mouseState){
-        mouseX += e.clientX - lastMouse[0];
-        mouseY += e.clientY - lastMouse[1];
-        mouseVelX += (e.clientX - lastMouse[0]) * 0.1;
-        mouseVelY += (e.clientY - lastMouse[1]) * -0.4;
-    }
-    lastMouse = [e.clientX, e.clientY];
-}
-
+/**
+ * Helper function that performs basic clamping operations
+ * @param {number} x Value to be clamped
+ * @param {number} a Minimum clamp value
+ * @param {number} b Maximum clamp value
+ * @returns clamped number
+ */
 function clamp(x, a, b){
     return Math.max(a, Math.min(x, b));
+}
+
+/** @global Toggle for whether to use the sphere visualization option */
+var useSphere = false;
+
+/** @global Flag for changed sphere state */
+var regenModel = false;
+
+document.getElementById("toggle_sphere").onclick = () => {
+    useSphere = !useSphere;
+    regenModel = true;
 }
 
 // This is not really a function, it's just the
@@ -70,11 +36,9 @@ terrain_demo = function() {
      */
     var runDemo = function(){
 
-
+        
         var logoCanvas = document.getElementById("myGLCanvas");
         var logoGL = WebGLUtils.setupWebGL(logoCanvas);
-        logoGL.clearColor(0.7, 0.7, 0.7, 1.0);
-
         var terrainShaderProgram; // shader program
         var vertexPositionBuffer; // WebGL buffer holding vertex positions
         var vertexIndexBuffer; // WebGL buffer holding indices
@@ -86,7 +50,7 @@ terrain_demo = function() {
         }
 
         // Setup buffers and extract references
-        var bufferResult = setupBuffers(logoGL.STATIC_DRAW, logoGL);
+        var bufferResult = setupBuffers(logoGL.STATIC_DRAW, useSphere, logoGL);
         vertexPositionBuffer = bufferResult.positions;
         vertexIndexBuffer = bufferResult.indices;
         vertexNormalBuffer = bufferResult.normals;
@@ -100,6 +64,25 @@ terrain_demo = function() {
             mouseVelY += -mouseVelY * 0.05;
             draw(rotateX, rotateY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
             logoGL.uniform1f(terrainShaderProgram.shiny, document.getElementById("shininess").value);
+
+            if(document.querySelector('input[name="use_blinnphong"]:checked').value == "yes"){
+                console.log("Using blinn-phong");
+                logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 1.0);
+            } else {
+                logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 0.0);
+            }
+
+            if(regenModel){
+                regenModel = false;
+                bufferResult = setupBuffers(logoGL.STATIC_DRAW, useSphere, logoGL);
+                vertexPositionBuffer.length = 0;
+                vertexIndexBuffer.length = 0;
+                vertexNormalBuffer.length = 0;
+                vertexPositionBuffer = bufferResult.positions;
+                vertexIndexBuffer = bufferResult.indices;
+                vertexNormalBuffer = bufferResult.normals;
+            }
+
             logoGL.uniform1f(terrainShaderProgram.time, now);
             animationID = requestAnimationFrame(render);
         }
@@ -186,6 +169,7 @@ terrain_demo = function() {
         shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
         shaderProgram.time = gl.getUniformLocation(shaderProgram, "time");
         shaderProgram.shiny = gl.getUniformLocation(shaderProgram, "u_shininess");
+        shaderProgram.useBlinnPhong = gl.getUniformLocation(shaderProgram, "u_useBlinnPhong");
 
         return shaderProgram;
     };

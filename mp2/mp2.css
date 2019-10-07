@@ -3,11 +3,21 @@
     margin: 0 auto;
 }
 
+.header {
+    text-align: left;
+    padding-left: 100px;
+    padding-right: 100px;
+    padding-top: 20px;
+}
+
 body {
     position: fixed;
-    margin: auto;
-    width: 800px;
-    padding-left: 50px;
-    padding-right: 50px;
+    margin: 0 auto;
+    text-align: center;
+    width: 100%;
+}
+
+.canvas {
+    text-align: center;
     padding-top: 20px;
 }

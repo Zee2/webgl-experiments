@@ -58,13 +58,12 @@ function loadShader(id, gl){
 /**
  *  Sets up buffers with provided data
  *  Much of this is borrowed from the HelloColor/HelloTriangle example.
- * @param {array} positionDataArray Array of vertices (positions)
- * @param {array} indexDataArray Array of indices for faces
+ * @param {boolean} generateSphere Whether to override the terrain gen and just do a sphere!
  * @param {number} drawMode Drawing mode (STATIC_DRAW, DYNAMIC_DRAW)
  * @param {WebGLRenderingContext} gl Reference to the WebGL context
  * @returns {object} Object with the position and index WebGLBuffers
  */
-function setupBuffers(drawMode, gl){
+function setupBuffers(drawMode, generateSphere, gl){
 
     
     //gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positionDataArray), drawMode,);
@@ -170,21 +169,25 @@ function setupBuffers(drawMode, gl){
         }
     }
     
-    /*
-    vertexNormals.length = 0;
-    modelData.length = 0;
-    modelIndices.length = 0;
+    
 
-    sphereFromSubdivision(4, modelData, modelIndices, vertexNormals);
-    console.log(modelData.length/3 + " vertices");
-    console.log(modelIndices.length/3 + " triangles");
+    if(generateSphere){
+        vertexNormals.length = 0;
+        modelData.length = 0;
+        modelIndices.length = 0;
 
-    for(var i = 0; i < modelData.length; i+=3){
-        modelData[i] += terrain_dim*0.05;
-        modelData[i+1] += 1.2;
-        modelData[i+2] += terrain_dim*0.05;
+        sphereFromSubdivision(4, modelData, modelIndices, vertexNormals);
+        console.log(modelData.length/3 + " vertices");
+        console.log(modelIndices.length/3 + " triangles");
+
+        for(var i = 0; i < modelData.length; i+=3){
+            modelData[i] += terrain_dim*0.05;
+            modelData[i+1] += 1.2;
+            modelData[i+2] += terrain_dim*0.05;
+        }
     }
-    */
+    
+    
 
     // Setup the position buffer.
     var vertexPositionBuffer = gl.createBuffer();

@@ -47,8 +47,8 @@
       
       vWorldPos = aVertexPosition;
 
-      //vec4 vLightPos4 = (u_modelview * vec4(100.0*cos(time * 0.002), 10.0, 100.0*sin(time * 0.002), 1.0));
-      vec4 vLightPos4 = (u_modelview * vec4(25.6 * 0.5, 10.0, 25.6 * 0.5, 1.0));
+      vec4 vLightPos4 = (u_modelview * vec4(2.0*cos(time * 0.001) + 7., 3.0, 2.0*sin(time * 0.001) + 7., 1.0));
+      //vec4 vLightPos4 = (u_modelview * vec4(4.0, 2.0, 4.0, 1.0));
       vLightPos = vLightPos4.xyz / vLightPos4.w;
 
       vec4 vEyePos4 = (u_modelview * vec4(aVertexPosition.xyz, 1.0));
@@ -67,6 +67,7 @@
 
   uniform float time;
   uniform float u_shininess;
+  uniform float u_useBlinnPhong;
 
   varying vec4 vColor;
   varying vec4 vWorldPos;
@@ -104,6 +105,8 @@
     // Calculate the reflection vector (r) that is needed for specular light
     vec3 reflectionVector = normalize(reflect(-vectorToLightSource, 
                                              normalEye));
+
+    
     
     // The camera in eye coordinates is located in the origin and is pointing
     // along the negative z-axis. Calculate viewVector (v) 
@@ -111,11 +114,27 @@
     // (0.0, 0.0, 0.0) - vertexPositionEye3
     vec3 viewVectorEye = -normalize(vEyePos);
     
+    
+
+    // Calculate the halfway vector (h)
+    vec3 halfwayVector = (vectorToLightSource + viewVectorEye) / length(vectorToLightSource + viewVectorEye);
+
+    // RdotV, for phong model only
     float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+
+    // NdotH, for blinn-phong
+    float ndoth = max(dot(normalEye, halfwayVector), 0.0);
 
     float diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
 
-    float specWeighting = pow(rdotv, u_shininess);
+    float specWeighting;
+    
+    if(u_useBlinnPhong > 0.5){
+      specWeighting = pow(rdotv, u_shininess);
+    } else {
+      specWeighting = pow(ndoth, u_shininess);
+    }
+    
     
     if(vWorldPos.y / MAX > 0.7){
       gl_FragColor = mix(ROCK, SNOW, smoothstep(0.7, 0.74, vWorldPos.y / MAX));
@@ -128,7 +147,7 @@
       gl_FragColor = WATER;
     }
 
-    vec4 phongColor = vec4(((vec3(0.3)*gl_FragColor.xyz)
+    vec4 phongColor = vec4(((vec3(0.4)*gl_FragColor.xyz)
                       + (vec3(1.0)*gl_FragColor.xyz) * diffuse
                       + (vec3(1.0)*vec3(1.0)) * specWeighting),1.0);
 
@@ -150,28 +169,41 @@
   }
   </script>
 
-<body style = "font-family: roboto; color: white; background-color: #aaaaaa" onload="startup();">
-  <h1 style = "font-family: roboto mono; ">
-    CS418 MP2
-  </h1>
-  <p style = "font-family: roboto mono">
-    Finn Sinclair - 2019
-  </p>
-  
-  <div class="uiContainer">
-    <div id="ui">
-      <div class="slidecontainer">
-        <input type="range" min="10" max="200" value="50" class="slider" id="shininess">
-      </div>
-    </div>
+<body style = "font-family: roboto; color: white; background-color: #131313" onload="startup();">
+  <div class = "header" >
+    <h1 style = "font-family: roboto mono; ">
+      CS418 MP2
+    </h1>
+    <p style = "font-family: roboto mono">
+      Finn Sinclair - 2019
+    </p>
     
+    <div class="uiContainer">
+      <div id="ui">
+        <div class="slidecontainer">
+          <input type="range" min="10" max="500" value="100" class="slider" id="shininess"> Shininess
+        </div>
+        <div class="radiobutton">
+          <input type="radio" class="radiobutton" value="yes" name="use_blinnphong" checked> Use Blinn-Phong
+          <input type="radio" class="radiobutton" value="no" name="use_blinnphong"> Use Phong
+        </div>
+        <div class="sphereButton">
+          <input type="button" name="toggle_sphere" id="toggle_sphere"value="Toggle sphere material visualization"> 
+        </div>
+        
+        Use the mouse or touchscreen to spin the model and dolly-zoom forward and backwards!
+      </div>
+      
+    </div>
   </div>
-  <canvas id="myGLCanvas" width="800" height="600" ></canvas>
+  <canvas class="canvas" id="myGLCanvas" width="1000" height = "600"></canvas>
+  
+  
 </body>
 
 <script src="gl-matrix.js"></script>   
 <script src="webgl-utils.js"></script>
-
+<script src="mouseControls.js"></script>
 <script src="simpleModeling.js"></script>
 <script src="helpers.js"></script>
 <script src="terrain_demo.js"></script>  
