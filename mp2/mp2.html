@@ -31,7 +31,6 @@
   varying vec3 vNormal;
   varying vec4 vWorldPos;
   varying vec3 vEyePos;
-  varying vec3 vLightPos;
   
   uniform sampler2D u_image;
   uniform mat4 u_modelview;
@@ -48,9 +47,7 @@
       
       vWorldPos = aVertexPosition;
 
-      vec4 vLightPos4 = (u_modelview * vec4(2.0*cos(time * 0.001) + 7., 3.0, 2.0*sin(time * 0.001) + 7., 1.0));
-      //vec4 vLightPos4 = (u_modelview * vec4(4.0, 2.0, 4.0, 1.0));
-      vLightPos = vLightPos4.xyz / vLightPos4.w;
+      
 
       vec4 vEyePos4 = (u_modelview * vec4(aVertexPosition.xyz, 1.0));
       vEyePos = vEyePos4.xyz / vEyePos4.w;
@@ -76,8 +73,6 @@
 
   varying vec3 vNormal;
 
-  varying vec3 vLightPos;
-
   varying float factor;
   varying float fogDensity;
   #define LOG2 1.442695
@@ -89,84 +84,94 @@
   #define WATER vec4(0, 0, 0.4, 1)
   #define MAX 3.0
 
+  #define NUM_LIGHTS 2.
 
   void main(void) {
 
 
-    // Calculate the vector (l) to the light source
-    vec3 vectorToLightSource = normalize(vLightPos - vEyePos);
-    
-    // Transform the normal (n) to eye coordinates
-    vec3 normalEye = normalize(u_normalMatrix * vNormal);
-    
-    // Calculate n dot l for diffuse lighting
-    float diffuseLightWeightning = max(dot(normalEye, 
-                                    vectorToLightSource), 0.0);
-                                       
-    // Calculate the reflection vector (r) that is needed for specular light
-    vec3 reflectionVector = normalize(reflect(-vectorToLightSource, 
-                                             normalEye));
+    vec4 vLightPos4;
+    vec3 vectorToLightSource;
+    vec3 normalEye;
+    float diffuseLightWeightning;
+    vec3 reflectionVector;
+    vec3 viewVectorEye;
+    vec3 halfwayVector;
+    float rdotv;
+    float ndoth;
+    float diffuse;
+    float specWeighting;
+    vec4 phongColor;
+    vec3 vLightPos;
 
-    
+    vec4 baseColor;
+
+    // First, calculate base color
+
+    if(vWorldPos.y / MAX > 0.7){
+      baseColor = mix(ROCK, SNOW, smoothstep(0.7, 0.74, vWorldPos.y / MAX));
+    } else if(vWorldPos.y / MAX > 0.5){
+      baseColor = mix(GRASS, ROCK, smoothstep(0.5, 0.7, vWorldPos.y / MAX));
+    } else if(vWorldPos.y / MAX > 0.2){
+      baseColor = mix(WATER, GRASS, smoothstep(0.2, 0.22, vWorldPos.y / MAX));
+    } else {
+      baseColor = WATER;
+    }
+
+    gl_FragColor = 0.1 * baseColor;
+
+    // Transform the normal (n) to eye coordinates
+    normalEye = normalize(u_normalMatrix * vNormal);
     
     // The camera in eye coordinates is located in the origin and is pointing
     // along the negative z-axis. Calculate viewVector (v) 
     // in eye coordinates as:
     // (0.0, 0.0, 0.0) - vertexPositionEye3
-    vec3 viewVectorEye = -normalize(vEyePos);
-    
-    
+    viewVectorEye = -normalize(vEyePos);
 
-    // Calculate the halfway vector (h)
-    vec3 halfwayVector = (vectorToLightSource + viewVectorEye) / length(vectorToLightSource + viewVectorEye);
+    for(float i = 0.; i < NUM_LIGHTS; i++){
 
-    // RdotV, for phong model only
-    float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+      vLightPos4 = (u_modelview * vec4(5.0*cos(time * 0.001 + ((2.*3.141)/NUM_LIGHTS) * i) + 7., 3.0, 5.0*sin(time * 0.001 + ((2.*3.141)/NUM_LIGHTS) * i) + 7., 1.0));
+      //vec4 vLightPos4 = (u_modelview * vec4(4.0, 2.0, 4.0, 1.0));
+      vLightPos = vLightPos4.xyz / vLightPos4.w;
 
-    // NdotH, for blinn-phong
-    float ndoth = max(dot(normalEye, halfwayVector), 0.0);
 
-    float diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
 
-    float specWeighting;
-    
-    if(u_useBlinnPhong > 0.5){
-      specWeighting = pow(rdotv, u_shininess);
-    } else {
-      specWeighting = pow(ndoth, u_shininess);
+      // Calculate the vector (l) to the light source
+      vectorToLightSource = normalize(vLightPos - vEyePos);
+      
+      // Calculate n dot l for diffuse lighting
+      diffuseLightWeightning = max(dot(normalEye, 
+                                      vectorToLightSource), 0.0);
+                                        
+      // Calculate the reflection vector (r) that is needed for specular light
+      reflectionVector = normalize(reflect(-vectorToLightSource, 
+                                              normalEye));
+
+      // Calculate the halfway vector (h)
+      halfwayVector = (vectorToLightSource + viewVectorEye) / length(vectorToLightSource + viewVectorEye);
+
+      // RdotV, for phong model only
+      rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+
+      // NdotH, for blinn-phong
+      ndoth = max(dot(normalEye, halfwayVector), 0.0);
+
+      diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
+
+      if(u_useBlinnPhong > 0.5){
+        specWeighting = pow(rdotv, u_shininess);
+      } else {
+        specWeighting = pow(ndoth, u_shininess);
+      }
+      
+      
+      
+      gl_FragColor += vec4(((vec3(0.9)*baseColor.xyz) * diffuse
+                        + (vec3(0.4)*vec3(1.0)) * specWeighting),1.0);
+      
+      
     }
     
-    
-    if(vWorldPos.y / MAX > 0.7){
-      gl_FragColor = mix(ROCK, SNOW, smoothstep(0.7, 0.74, vWorldPos.y / MAX));
-    } else if(vWorldPos.y / MAX > 0.5){
-      //gl_FragColor = vec4(vWorldPos.y * 0.1 + 0.1, vWorldPos.y * 0.1 + 0.1, vWorldPos.y * 0.1 + 0.1, 1);
-      gl_FragColor = mix(GRASS, ROCK, smoothstep(0.5, 0.7, vWorldPos.y / MAX));
-    } else if(vWorldPos.y / MAX > 0.2){
-      gl_FragColor = mix(WATER, GRASS, smoothstep(0.2, 0.22, vWorldPos.y / MAX));
-    } else {
-      gl_FragColor = WATER;
-    }
-
-    vec4 phongColor = vec4(((vec3(0.4)*gl_FragColor.xyz)
-                      + (vec3(1.0)*gl_FragColor.xyz) * diffuse
-                      + (vec3(1.0)*vec3(1.0)) * specWeighting),1.0);
-
-    gl_FragColor = phongColor;
-
-    //gl_FragColor += vec4(vNormal.x, vNormal.x, vNormal.x, 1.0) * 0.5;
-    
-    //gl_FragColor = vec4(vectorToLightSource.x, 1.0, 1.0, 1.0) * 2.0;
-
-    //gl_FragColor = SNOW;
-
-    //gl_FragColor *= vec4(diffuse, diffuse, diffuse, 1.0);
-
-    //gl_FragColor += rdotv * 0.4;
-
-    //gl_FragColor = vec4(reflectionVector, 1.0);
-
-    //gl_FragColor = vec4(gl_FragCoord.xy /200.0, 1.0, 1.0);
   }
   </script>
 
