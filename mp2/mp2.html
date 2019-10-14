@@ -9,6 +9,8 @@
  
 <script id="shader-vs" type="x-shader/x-vertex">
 
+  
+
   precision mediump float;
 
   attribute vec4 aVertexPosition;
@@ -25,10 +27,18 @@
   uniform mat3 u_normalMatrix;
   
   void main(void) {
-      vNormal = aVertexNormal;
-      gl_Position = u_projection * u_modelview * aVertexPosition;
+      if(aVertexPosition.y <= 0.6){
+        vNormal = vec3(0.0, 1.0, 0.0);
+      } else {
+        vNormal = aVertexNormal;
+      }
       
-      vWorldPos = aVertexPosition;
+      
+      vec4 clamp_temp = aVertexPosition;
+      clamp_temp.y = clamp(clamp_temp.y, 0.6, 1000.);
+      gl_Position = u_projection * u_modelview * clamp_temp;
+      
+      vWorldPos = clamp_temp;
 
       vec4 vEyePos4 = (u_modelview * vec4(aVertexPosition.xyz, 1.0));
       vEyePos = vEyePos4.xyz / vEyePos4.w;
@@ -52,8 +62,8 @@
 
   #define SNOW vec4(0.9, 0.9, 0.9, 1)
   #define ROCK vec4(0.3, 0.3, 0.3, 1)
-  #define GRASS vec4(0.1, 0.3, 0.05, 1)
-  #define WATER vec4(0, 0, 0.4, 1)
+  #define GRASS vec4(0.1, 0.2, 0.05, 1)
+  #define WATER vec4(0.1, 0.3, 0.4, 1)
   #define MAX 3.0
 
   // These could be uniforms, but I don't really feel
@@ -88,9 +98,9 @@
     // First, calculate base color
 
     if(vWorldPos.y / MAX > 0.7){
-      baseColor = mix(ROCK, SNOW, smoothstep(0.7, 0.74, vWorldPos.y / MAX));
+      baseColor = mix(ROCK, SNOW, smoothstep(0.7, 0.705, vWorldPos.y / MAX));
     } else if(vWorldPos.y / MAX > 0.5){
-      baseColor = mix(GRASS, ROCK, smoothstep(0.5, 0.7, vWorldPos.y / MAX));
+      baseColor = mix(GRASS, ROCK, smoothstep(0.4, 0.7, vWorldPos.y / MAX));
     } else if(vWorldPos.y / MAX > 0.2){
       baseColor = mix(WATER, GRASS, smoothstep(0.2, 0.22, vWorldPos.y / MAX));
     } else {
