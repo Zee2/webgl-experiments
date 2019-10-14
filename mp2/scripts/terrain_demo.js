@@ -50,25 +50,24 @@ terrain_demo = function() {
         vertexIndexBuffer = bufferResult.indices;
         vertexNormalBuffer = bufferResult.normals;
         var rotateX = 0;
-        var rotateY = 1000;
+        var dollyY = 1200;
         function render(now) {
 
             // Compute per-frame mouse input
             rotateX += mouseVelX;
             mouseVelX += -mouseVelX * 0.05;
-            rotateY += mouseVelY;
-            rotateY = clamp(rotateY, 500, 5000);
+            dollyY += mouseVelY;
+            dollyY = clamp(dollyY, 500, 5000);
             mouseVelY += -mouseVelY * 0.05;
 
             // Draw scene, pass in buffers
-            draw(rotateX, rotateY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
+            draw(rotateX, dollyY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
             
             // Set the uniform value for the shininess based on slider input.
             logoGL.uniform1f(terrainShaderProgram.shiny, document.getElementById("shininess").value);
 
             // Get blinn/phong toggle status and set the shader accordingly
             if(document.querySelector('input[name="use_blinnphong"]:checked').value == "yes"){
-                console.log("Using blinn-phong");
                 logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 1.0);
             } else {
                 logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 0.0);
