@@ -72,6 +72,7 @@
   #define NUM_LIGHTS 2.
   #define AMBIENT_STRENGTH 0.15
   #define DIFFUSE_STRENGTH 0.9
+  #define SPEC_STRENGTH 0.4
 
 
   void main(void) {
@@ -108,7 +109,8 @@
     }
 
     // Ambient light calculation
-    // We do it first, as it's common to both Phong and Blinn-Phong
+    // We do it first, as it's common to both Phong and Blinn-Phong,
+    // and should not be done per-light (Only one ambient source!)
     gl_FragColor = AMBIENT_STRENGTH * baseColor;
 
     // Transform the normal (n) to eye coordinates
@@ -162,7 +164,7 @@
       // Perform the rest of the shading calculation.
       // We don't do the ambient here, we already did it above (before the shading calculation)
       gl_FragColor += vec4(((vec3(DIFFUSE_STRENGTH)*baseColor.xyz) * diffuse
-                        + (vec3(0.4)*vec3(1.0)) * specWeighting),1.0);
+                        + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
       
       
     }
