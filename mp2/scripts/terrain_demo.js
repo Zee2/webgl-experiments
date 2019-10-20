@@ -68,7 +68,7 @@ terrain_demo = function() {
         var rotateX = 0;
         var dollyY = 1200;
         
-        user_pos = glMatrix.vec3.fromValues(-10, 3, -10);
+        user_pos = glMatrix.vec3.fromValues(-8, 3, -15);
         function render(now) {
 
             // Compute per-frame mouse input
@@ -108,6 +108,20 @@ terrain_demo = function() {
                 logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 1.0);
             } else {
                 logoGL.uniform1f(terrainShaderProgram.useBlinnPhong, 0.0);
+            }
+
+            // Get fog toggle status and set the shader accordingly
+            if(document.querySelector('input[name="use_fog"]:checked')){
+                logoGL.uniform1f(terrainShaderProgram.drawFog, 1.0);
+            } else {
+                logoGL.uniform1f(terrainShaderProgram.drawFog, 0.0);
+            }
+
+            // Get clouds toggle status and set the shader accordingly
+            if(document.querySelector('input[name="use_clouds"]:checked')){
+                logoGL.uniform1f(terrainShaderProgram.drawClouds, 1.0);
+            } else {
+                logoGL.uniform1f(terrainShaderProgram.drawClouds, 0.0);
             }
 
             // If the regen_model flag was set, we regenerate the buffers with the useSphere flag,
@@ -236,6 +250,9 @@ terrain_demo = function() {
         shaderProgram.useBlinnPhong = gl.getUniformLocation(shaderProgram, "u_useBlinnPhong");
         shaderProgram.worldCameraPosition = gl.getUniformLocation(shaderProgram, "u_worldCameraPosition");
         shaderProgram.skyboxDraw = gl.getUniformLocation(shaderProgram, "u_skyboxDraw");
+
+        shaderProgram.drawClouds = gl.getUniformLocation(shaderProgram, "u_drawClouds");
+        shaderProgram.drawFog = gl.getUniformLocation(shaderProgram, "u_drawFog");
 
         return shaderProgram;
     };
@@ -446,22 +463,26 @@ terrain_demo = function() {
         gl.drawElements(gl.TRIANGLES, num_polys, gl.UNSIGNED_SHORT, 0);
 
         
-        // Draw skybox
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
+        if(document.querySelector('input[name="use_clouds"]:checked')){
+            // Draw skybox
+            gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
+            gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
+            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
+                                        3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
+            
+            gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
+            // Go draw 'em!
+            gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
+        }
+
         
-        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
-                                    3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
-        
-        gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
-        // Go draw 'em!
-        gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
 
     };
 

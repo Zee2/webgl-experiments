@@ -1,6 +1,7 @@
 .uiContainer {
-    text-align: center;
     margin: 0 auto;
+    display: flex;
+    align-items: stretch;
 }
 
 .header {

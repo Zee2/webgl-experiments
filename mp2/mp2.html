@@ -58,6 +58,8 @@
   uniform float u_shininess;
   uniform float u_useBlinnPhong;
   uniform float u_skyboxDraw;
+  uniform float u_drawFog;
+  uniform float u_drawClouds;
 
   varying vec4 vColor;
   varying vec4 vWorldPos;
@@ -187,7 +189,7 @@
 
   // Samples cloud density at point.
   float sampleDensity(vec3 pos){
-    float clouds = clamp((snoise(pos * 0.8)) * 1.5, 0.0, 1.0) * clamp((snoise(pos * 4.0)) * 0.9, 0.0, 1.0);
+    float clouds = clamp((snoise(pos * 0.8)) * 1.5, 0.0, 1.0) * clamp((snoise(pos * 4.0)) * 1.5, 0.0, 1.0);
 
     if(pos.y > 2.0){
       return mix(clouds, 0.0, smoothstep(2.0, 2.1, pos.y));
@@ -299,21 +301,29 @@
     vec3 ray = vWorldPos.xyz - modifiedCameraPosition;
 
     // Perform logarithmic distance fog calculation
-    float distance_fog = clamp(log(clamp(length(ray) * 0.6 - 1., 0., 10.)), 0., 0.6);
-    gl_FragColor = mix(gl_FragColor, vec4(1.), distance_fog);
+    float distance_fog = clamp(log(clamp(length(ray) * 0.4 - 0.5, 0., 10.)), 0., 0.9);
+    gl_FragColor = mix(gl_FragColor, vec4(1.), distance_fog * u_drawFog);
 
-    // Raymarch through cloud layer to render fully volumetric clouds!
-    float accum_density;
-    float raymarch = 0.0;
-    for(int iter = 0; iter < 100; iter++){
-      accum_density += sampleDensity(modifiedCameraPosition + normalize(ray) * raymarch) * 0.5;
-      raymarch += 0.04;
-      
-      if(raymarch > length(ray) + 0.1) break;
+
+    if(u_drawClouds > 0.5){
+      // Raymarch through cloud layer to render fully volumetric clouds!
+      float accum_density;
+      float raymarch = 0.0;
+      for(int iter = 0; iter < 100; iter++){
+        accum_density += sampleDensity(modifiedCameraPosition + normalize(ray) * raymarch) * 0.5;
+        raymarch += 0.04;
+        
+        if(raymarch > length(ray) + 0.0) break;
+      }
+
+      //vec4(vec3(avg_altitude - 2.0), 1.0)
+      gl_FragColor = mix(gl_FragColor * (1.0 - u_skyboxDraw), vec4(1.0), clamp(pow(accum_density * 0.4, 1.), 0., 1.0));
     }
 
-    //vec4(vec3(avg_altitude - 2.0), 1.0)
-    gl_FragColor = mix(gl_FragColor * (1.0 - u_skyboxDraw), vec4(1.0), clamp(pow(accum_density * 0.4, 1.), 0., 1.0));
+    if(u_skyboxDraw > 0.5){
+      gl_FragColor = mix(gl_FragColor, vec4(1.), 1. - smoothstep(0.0,3.0, vWorldPos.y));
+    }
+    
     
   }
   </script>
@@ -328,6 +338,9 @@
     </p>
     
     <div class="uiContainer">
+      <div class="controls">
+          <img src="controls.png" width="500">
+      </div>
       <div id="ui">
         <div class="slidecontainer">
           <input type="range" min="10" max="500" value="100" class="slider" id="shininess"> Shininess
@@ -336,12 +349,12 @@
           <input type="radio" class="radiobutton" value="yes" name="use_blinnphong" checked> Use Blinn-Phong
           <input type="radio" class="radiobutton" value="no" name="use_blinnphong"> Use Phong
         </div>
+        <input type="checkbox" class="radiobutton" name="use_fog" checked> Render distance fog <br>
+        <input type="checkbox" class="radiobutton" name="use_clouds" checked> Render volumetric raymarched clouds
         <div class="sphereButton">
           <input type="button" name="toggle_sphere" id="toggle_sphere"value="Toggle sphere material visualization"> 
         </div>
         
-        Use the <b><i>mouse</i></b> or <b><i>touchscreen</i></b> to spin the model and dolly-zoom forward and backwards! <br>
-        The scene has two rotating lights, that rotate automatically in a wide circle around the origin.
       </div>
       
     </div>
