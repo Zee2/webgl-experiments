@@ -464,23 +464,21 @@ terrain_demo = function() {
 
         
 
-        if(document.querySelector('input[name="use_clouds"]:checked')){
-            // Draw skybox
-            gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
-            gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+        // Draw skybox
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
-            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
-                                        3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
-            
-            gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
-            // Go draw 'em!
-            gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
-        }
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
+                                    3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
+        
+        gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
+        // Go draw 'em!
+        gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
 
         
 

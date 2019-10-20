@@ -300,9 +300,14 @@
     vec3 modifiedCameraPosition = vec3(u_worldCameraPosition.x * -1., u_worldCameraPosition.y, u_worldCameraPosition.z * -1.);
     vec3 ray = vWorldPos.xyz - modifiedCameraPosition;
 
-    // Perform logarithmic distance fog calculation
-    float distance_fog = clamp(log(clamp(length(ray) * 0.4 - 0.5, 0., 10.)), 0., 0.9);
-    gl_FragColor = mix(gl_FragColor, vec4(1.), distance_fog * u_drawFog);
+    if(u_skyboxDraw < 0.5){
+      // Perform logarithmic distance fog calculation
+      float distance_fog = clamp(log(clamp(length(ray) * 0.4 - 0.5, 0., 10.)), 0., 0.9);
+      gl_FragColor = mix(gl_FragColor, vec4(1.), distance_fog * u_drawFog);
+    } else {
+      gl_FragColor = vec4(0., 0., 0., 0.0);
+    }
+    
 
 
     if(u_drawClouds > 0.5){
@@ -350,7 +355,7 @@
           <input type="radio" class="radiobutton" value="no" name="use_blinnphong"> Use Phong
         </div>
         <input type="checkbox" class="radiobutton" name="use_fog" checked> Render distance fog <br>
-        <input type="checkbox" class="radiobutton" name="use_clouds" checked> Render volumetric raymarched clouds
+        <input type="checkbox" class="radiobutton" name="use_clouds" unchecked> Render volumetric raymarched clouds
         <div class="sphereButton">
           <input type="button" name="toggle_sphere" id="toggle_sphere"value="Toggle sphere material visualization"> 
         </div>
