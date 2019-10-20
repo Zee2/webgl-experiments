@@ -11,6 +11,20 @@ var regenModel = false;
 /** @global Constant for terrain tile size (terrain_dim x terrain_dim tiles) */
 const terrain_dim = 128;
 
+var user_pos = glMatrix.vec3.create();
+var user_rotation = glMatrix.quat.create();
+var user_velocity = 0.005;
+var user_angular_velocity = glMatrix.vec3.create();
+
+var skyboxVertexPosArray = [];
+var skyboxIndexArray = [];
+var skyboxNormalArray = [];
+var skybox_vertexPositionBuffer;
+var skybox_vertexIndexBuffer;
+var skybox_vertexNormalBuffer
+
+
+
 // Assign the toggle sphere button onclick callback to a lambda that
 // toggles the sphere model flag and triggers model regeneration
 document.getElementById("toggle_sphere").onclick = () => {
@@ -39,6 +53,8 @@ terrain_demo = function() {
         var vertexIndexBuffer; // WebGL buffer holding indices
         var vertexNormalBuffer; // WebGL buffer holding normals
 
+        
+
         terrainShaderProgram = setupShaders(logoGL);
         if(terrainShaderProgram == null){
             alert("shader program is null");
@@ -51,6 +67,8 @@ terrain_demo = function() {
         vertexNormalBuffer = bufferResult.normals;
         var rotateX = 0;
         var dollyY = 1200;
+        
+        user_pos = glMatrix.vec3.fromValues(-10, 3, -10);
         function render(now) {
 
             // Compute per-frame mouse input
@@ -59,6 +77,25 @@ terrain_demo = function() {
             dollyY += mouseVelY;
             dollyY = clamp(dollyY, 500, 5000);
             mouseVelY += -mouseVelY * 0.05;
+
+            
+            var forward_vector = glMatrix.vec3.fromValues(0,0,1);
+            var inverted = glMatrix.quat.create();
+            glMatrix.vec3.transformQuat(forward_vector, forward_vector, glMatrix.quat.invert(inverted, user_rotation));
+            glMatrix.vec3.multiply(forward_vector, forward_vector, [user_velocity, -user_velocity, user_velocity]);
+            glMatrix.vec3.add(user_pos, user_pos, forward_vector);
+
+            user_angular_velocity[0] += y_input * 0.05;
+            user_angular_velocity[1] += yaw_input * 0.05;
+            user_angular_velocity[2] += x_input * 0.05;
+
+            glMatrix.vec3.scale(user_angular_velocity, user_angular_velocity, 0.99);
+
+            user_velocity += throttle * 0.0001;
+            
+
+            // Compute per-frame keyboard input
+            compute_keyboard_input();
 
             // Draw scene, pass in buffers
             draw(rotateX, dollyY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
@@ -107,17 +144,49 @@ terrain_demo = function() {
 
         // Construct perspective projection matrix.
         var projectionMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.perspective(projectionMatrix, Math.PI/5, gl.canvas.width/ gl.canvas.height, 1,150);
+        glMatrix.mat4.perspective(projectionMatrix, Math.PI/3, gl.canvas.width/ gl.canvas.height, 0.01,40);
 
         // Calculate a good eyepos to look at the terrain from.
-        var eyePos = glMatrix.vec3.fromValues(y*10,y**1.5 * 5,y*10);
-        
+        // var eyePos = glMatrix.vec3.fromValues(y*10,y**1.5 * 5,y*10);
+
         // Construct modelview matrix using a lookat and a y-rotation, plus a translation to
         // give us some distance from the model.
+        var viewMatrix = glMatrix.mat4.create();
+
+        
+        var user_pitch = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(user_pitch, [1, 0, 0], user_angular_velocity[0] * 0.01);
+        var user_roll = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(user_roll, [0, 0, 1], user_angular_velocity[2] * 0.01);
+        var user_yaw = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(user_yaw, [0, 1, 0], user_angular_velocity[1] * 0.005);
+
+        //var user_attitude = glMatrix.quat.create();
+        //glMatrix.quat.multiply(user_attitude, user_pitch, user_roll);
+
+        glMatrix.quat.multiply(user_rotation, user_pitch, user_rotation);
+        glMatrix.quat.multiply(user_rotation, user_roll, user_rotation);
+        glMatrix.quat.multiply(user_rotation, user_yaw, user_rotation);
+        var user_rot_matrix = glMatrix.mat4.create();
+        glMatrix.mat4.fromQuat(user_rot_matrix, user_rotation);
+
+        glMatrix.mat4.multiply(viewMatrix, viewMatrix, user_rot_matrix);
+
+        var flipped_user_pos = glMatrix.vec3.fromValues(user_pos[0], -user_pos[1], user_pos[2]);
+
+        //glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,1,0], [0,1,0]);
+        //glMatrix.mat4.rotateY(modelViewMatrix, modelViewMatrix, x/200);
+        glMatrix.mat4.translate(viewMatrix, viewMatrix, flipped_user_pos);
+        //glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-(terrain_dim * 0.1 * 0.5), 0, -(terrain_dim * 0.1 * 0.5)]);
+        
+        //glMatrix.mat4.scale(modelViewMatrix, modelViewMatrix, [1, -1, 1]);
+
+        var modelMatrix = glMatrix.mat4.create();
+
         var modelViewMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,1,0], [0,1,0]);
-        glMatrix.mat4.rotateY(modelViewMatrix, modelViewMatrix, x/200);
-        glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-(terrain_dim * 0.1 * 0.5), 0, -(terrain_dim * 0.1 * 0.5)]);
+
+        glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+
         
 
         // Construct normal matrix, which is simply the inverse transpose of the modelview.
@@ -130,6 +199,7 @@ terrain_demo = function() {
         gl.uniformMatrix4fv(shaderProgram.modelview, false, modelViewMatrix);
         gl.uniformMatrix4fv(shaderProgram.projection, false, projectionMatrix);
         gl.uniformMatrix3fv(shaderProgram.normalMatrix, false, normalMatrix);
+        gl.uniform3fv(shaderProgram.worldCameraPosition, user_pos);
     };
     
     
@@ -164,6 +234,8 @@ terrain_demo = function() {
         shaderProgram.time = gl.getUniformLocation(shaderProgram, "time");
         shaderProgram.shiny = gl.getUniformLocation(shaderProgram, "u_shininess");
         shaderProgram.useBlinnPhong = gl.getUniformLocation(shaderProgram, "u_useBlinnPhong");
+        shaderProgram.worldCameraPosition = gl.getUniformLocation(shaderProgram, "u_worldCameraPosition");
+        shaderProgram.skyboxDraw = gl.getUniformLocation(shaderProgram, "u_skyboxDraw");
 
         return shaderProgram;
     };
@@ -304,6 +376,25 @@ terrain_demo = function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), drawMode);
 
+        // Construct skybox sphere
+        sphereFromSubdivision(5, skyboxVertexPosArray, skyboxIndexArray, skyboxNormalArray);
+
+        for(var i = 0; i < skyboxVertexPosArray.length; i++){
+            skyboxVertexPosArray[i] *= 20.0;
+        }
+        
+        skybox_vertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(skyboxVertexPosArray), drawMode);
+
+        skybox_vertexIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(skyboxIndexArray), drawMode);
+
+        skybox_vertexNormalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(skyboxNormalArray), drawMode);
+        
         return {positions: vertexPositionBuffer, indices: vertexIndexBuffer, normals: vertexNormalBuffer, numIndices: modelIndices.length};
     };
 
@@ -350,8 +441,28 @@ terrain_demo = function() {
                                     3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
         
+        gl.uniform1f(shaderProgram.skyboxDraw, 0.0);
         // Go draw 'em!
         gl.drawElements(gl.TRIANGLES, num_polys, gl.UNSIGNED_SHORT, 0);
+
+        
+        // Draw skybox
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skybox_vertexIndexBuffer);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexNormalBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
+                                    3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
+        
+        gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
+        // Go draw 'em!
+        gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
+
     };
 
     // The sketchy VanillaJS equivalent of module.exports
