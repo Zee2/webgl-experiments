@@ -9,8 +9,6 @@
  
 <script id="shader-vs" type="x-shader/x-vertex">
 
-  
-
   precision mediump float;
 
   attribute vec4 aVertexPosition;
@@ -34,7 +32,9 @@
         vNormal = aVertexNormal;
       }
       
-      
+      // Clamp the world position of the vertices to not be lower than 0.6.
+      // This will do our "sea level" effect for us, and give us pretty oceans/lakes!
+      // We also sample u_skyboxDraw to prevent also clamping the skybox (would be bad...)
       vec4 clamp_temp = aVertexPosition;
       clamp_temp.y = clamp(clamp_temp.y, 0.6 * (1.0 - u_skyboxDraw), 1000.);
       gl_Position = u_projection * u_modelview * clamp_temp;
@@ -82,7 +82,7 @@
 
   // ---------------------------------------------------------------------
   //
-  // LIBRARY CODE: Common 3D noise functions taken from ashima/webgl-noise
+  // LIBRARY CODE: Common 3D noise functions inspired by ashima/webgl-noise
   //     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
   //               Distributed under the MIT License.
   //               https://github.com/ashima/webgl-noise
@@ -291,15 +291,13 @@
       // We don't do the ambient here, we already did it above (before the shading calculation)
       gl_FragColor += vec4(((vec3(DIFFUSE_STRENGTH)*baseColor.xyz) * diffuse
                         + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
-
-      
-      
     }
 
     // Get adjusted world-space camera position
     vec3 modifiedCameraPosition = vec3(u_worldCameraPosition.x * -1., u_worldCameraPosition.y, u_worldCameraPosition.z * -1.);
     vec3 ray = vWorldPos.xyz - modifiedCameraPosition;
 
+    // If we're NOT drawing the skybox, do distance fog
     if(u_skyboxDraw < 0.5){
       // Perform logarithmic distance fog calculation
       float distance_fog = clamp(log(clamp(length(ray) * 0.4 - 0.5, 0., 10.)), 0., 0.9);
@@ -307,9 +305,8 @@
     } else {
       gl_FragColor = vec4(0., 0., 0., 0.0);
     }
-    
 
-
+    // If we're drawing the volumetric clouds (expensive!)
     if(u_drawClouds > 0.5){
       // Raymarch through cloud layer to render fully volumetric clouds!
       float accum_density;
@@ -318,13 +315,15 @@
         accum_density += sampleDensity(modifiedCameraPosition + normalize(ray) * raymarch) * 0.5;
         raymarch += 0.04;
         
+        // Stop raymarching when we get to the end of the ray.
         if(raymarch > length(ray) + 0.0) break;
       }
 
-      //vec4(vec3(avg_altitude - 2.0), 1.0)
+      // Mix in the raymarch density field
       gl_FragColor = mix(gl_FragColor * (1.0 - u_skyboxDraw), vec4(1.0), clamp(pow(accum_density * 0.4, 1.), 0., 1.0));
     }
 
+    // If we're drawing the skybox, draw the nice sky gradient :)
     if(u_skyboxDraw > 0.5){
       gl_FragColor = mix(gl_FragColor, vec4(1.), 1. - smoothstep(0.0,3.0, vWorldPos.y));
     }
@@ -343,10 +342,8 @@
     </p>
     
     <div class="uiContainer">
-      <div class="controls">
-          <img src="controls.png" width="500">
-      </div>
-      <div id="ui">
+      <div class="ui">
+        <img src="controls.png" width="400">
         <div class="slidecontainer">
           <input type="range" min="10" max="500" value="100" class="slider" id="shininess"> Shininess
         </div>
@@ -355,16 +352,20 @@
           <input type="radio" class="radiobutton" value="no" name="use_blinnphong"> Use Phong
         </div>
         <input type="checkbox" class="radiobutton" name="use_fog" checked> Render distance fog <br>
-        <input type="checkbox" class="radiobutton" name="use_clouds" unchecked> Render volumetric raymarched clouds
+        <input type="checkbox" class="radiobutton" name="use_clouds" unchecked> Render volumetric raymarched clouds <br>
+        <input type="checkbox" class="radiobutton" name="use_spinning" checked> Enable spinning lights!
         <div class="sphereButton">
           <input type="button" name="toggle_sphere" id="toggle_sphere"value="Toggle sphere material visualization"> 
         </div>
         
       </div>
-      
+    <div class="webgl-canvas">
+        <canvas class="canvas" id="myGLCanvas" width="1000" height = "600"></canvas>
+    </div>
+    
     </div>
   </div>
-  <canvas class="canvas" id="myGLCanvas" width="1000" height = "600"></canvas>
+  
   
   
 </body>

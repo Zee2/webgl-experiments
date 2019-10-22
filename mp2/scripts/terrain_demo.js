@@ -11,19 +11,27 @@ var regenModel = false;
 /** @global Constant for terrain tile size (terrain_dim x terrain_dim tiles) */
 const terrain_dim = 128;
 
+/** @global Current user/pilot position */
 var user_pos = glMatrix.vec3.create();
+/** @global Current user/pilot rotation quaternion */
 var user_rotation = glMatrix.quat.create();
+/** @global Current user/pilot velocity (scalar, units per frame) */
 var user_velocity = 0.005;
+/** @global Current user/pilot angular velocity */
 var user_angular_velocity = glMatrix.vec3.create();
 
+/** @global Skybox mesh data (vertices) */
 var skyboxVertexPosArray = [];
+/** @global Skybox mesh data (indices) */
 var skyboxIndexArray = [];
+/** @global Skybox mesh data (normals) */
 var skyboxNormalArray = [];
+/** @global Skybox WebGL buffer (vertices) */
 var skybox_vertexPositionBuffer;
+/** @global Skybox WebGL buffer (indices) */
 var skybox_vertexIndexBuffer;
+/** @global Skybox WebGL buffer (normals) */
 var skybox_vertexNormalBuffer
-
-
 
 // Assign the toggle sphere button onclick callback to a lambda that
 // toggles the sphere model flag and triggers model regeneration
@@ -44,21 +52,25 @@ terrain_demo = function() {
      * @returns void
      */
     var runDemo = function(){
-
         
+        // Set up WebGL context
         var logoCanvas = document.getElementById("myGLCanvas");
         var logoGL = WebGLUtils.setupWebGL(logoCanvas);
-        var terrainShaderProgram; // shader program
-        var vertexPositionBuffer; // WebGL buffer holding vertex positions
-        var vertexIndexBuffer; // WebGL buffer holding indices
-        var vertexNormalBuffer; // WebGL buffer holding normals
 
-        
-
+        // Shader program
+        var terrainShaderProgram; 
         terrainShaderProgram = setupShaders(logoGL);
         if(terrainShaderProgram == null){
             alert("shader program is null");
         }
+        
+        // WebGL buffer holding vertex positions
+        var vertexPositionBuffer;
+        // WebGL buffer holding indices
+        var vertexIndexBuffer;
+        // WebGL buffer holding normals
+        var vertexNormalBuffer;
+        
 
         // Setup buffers and extract references
         var bufferResult = setupBuffers(logoGL.STATIC_DRAW, useSphere, logoGL);
@@ -71,6 +83,10 @@ terrain_demo = function() {
         user_pos = glMatrix.vec3.fromValues(-8, 3, -15);
         function render(now) {
 
+
+            // Compute per-frame keyboard input
+            compute_keyboard_input();
+
             // Compute per-frame mouse input
             rotateX += mouseVelX;
             mouseVelX += -mouseVelX * 0.05;
@@ -78,24 +94,29 @@ terrain_demo = function() {
             dollyY = clamp(dollyY, 500, 5000);
             mouseVelY += -mouseVelY * 0.05;
 
-            
+            // Compute forward vector of plane/user by transforming z+
+            // by the inverse of the look rotation
             var forward_vector = glMatrix.vec3.fromValues(0,0,1);
             var inverted = glMatrix.quat.create();
             glMatrix.vec3.transformQuat(forward_vector, forward_vector, glMatrix.quat.invert(inverted, user_rotation));
+
+            // Multiply by user velocity
             glMatrix.vec3.multiply(forward_vector, forward_vector, [user_velocity, -user_velocity, user_velocity]);
+
+            // Move the user
             glMatrix.vec3.add(user_pos, user_pos, forward_vector);
 
-            user_angular_velocity[0] += y_input * 0.05;
+            // Compute angular velocity delta (framerate based... ew)
+            user_angular_velocity[0] += pitch_input * 0.05;
             user_angular_velocity[1] += yaw_input * 0.05;
-            user_angular_velocity[2] += x_input * 0.05;
+            user_angular_velocity[2] += roll_input * 0.05;
 
+            // Dampen angular velocity (also framerate based, yuck)
             glMatrix.vec3.scale(user_angular_velocity, user_angular_velocity, 0.99);
 
-            user_velocity += throttle * 0.0001;
-            
+            // Adjust user velocity based on throttle input.
+            user_velocity += throttle_input * 0.0001;
 
-            // Compute per-frame keyboard input
-            compute_keyboard_input();
 
             // Draw scene, pass in buffers
             draw(rotateX, dollyY * 0.001, bufferResult.numIndices, vertexPositionBuffer, vertexIndexBuffer, vertexNormalBuffer, terrainShaderProgram, logoGL);
@@ -138,7 +159,8 @@ terrain_demo = function() {
             }
 
             // Set the time uniform variable so that the lights can animate/spin smoothly around the scene :)
-            logoGL.uniform1f(terrainShaderProgram.time, now);
+            if(document.querySelector('input[name="use_spinning"]:checked'))
+                logoGL.uniform1f(terrainShaderProgram.time, now);
             animationID = requestAnimationFrame(render);
         }
         animationID = requestAnimationFrame(render);
@@ -394,8 +416,10 @@ terrain_demo = function() {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), drawMode);
 
         // Construct skybox sphere
+        // This uses the global skybox vars, which is sort of gross, but eh
         sphereFromSubdivision(5, skyboxVertexPosArray, skyboxIndexArray, skyboxNormalArray);
 
+        // Make the skybox sphere LARGE!
         for(var i = 0; i < skyboxVertexPosArray.length; i++){
             skyboxVertexPosArray[i] *= 20.0;
         }
@@ -464,7 +488,8 @@ terrain_demo = function() {
 
         
 
-        // Draw skybox
+        // Draw skybox!
+        // We re-bind the buffers to the skybox buffers (which are global)
         gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
@@ -476,6 +501,7 @@ terrain_demo = function() {
                                     3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
         
+        // Tell the shader program we're currently drawing the skybox
         gl.uniform1f(shaderProgram.skyboxDraw, 1.0);
         // Go draw 'em!
         gl.drawElements(gl.TRIANGLES, skyboxIndexArray.length, gl.UNSIGNED_SHORT, 0);
