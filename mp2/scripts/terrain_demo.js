@@ -80,7 +80,7 @@ terrain_demo = function() {
         var rotateX = 0;
         var dollyY = 1200;
         
-        user_pos = glMatrix.vec3.fromValues(-8, 3, -15);
+        user_pos = glMatrix.vec3.fromValues(-8, 4, -15);
         function render(now) {
 
 
@@ -182,14 +182,10 @@ terrain_demo = function() {
         var projectionMatrix = glMatrix.mat4.create();
         glMatrix.mat4.perspective(projectionMatrix, Math.PI/3, gl.canvas.width/ gl.canvas.height, 0.01,40);
 
-        // Calculate a good eyepos to look at the terrain from.
-        // var eyePos = glMatrix.vec3.fromValues(y*10,y**1.5 * 5,y*10);
-
-        // Construct modelview matrix using a lookat and a y-rotation, plus a translation to
-        // give us some distance from the model.
+        // Initialize view matrix.
         var viewMatrix = glMatrix.mat4.create();
 
-        
+        // Create three quaternions, for each of the input axes.
         var user_pitch = glMatrix.quat.create();
         glMatrix.quat.setAxisAngle(user_pitch, [1, 0, 0], user_angular_velocity[0] * 0.01);
         var user_roll = glMatrix.quat.create();
@@ -197,33 +193,32 @@ terrain_demo = function() {
         var user_yaw = glMatrix.quat.create();
         glMatrix.quat.setAxisAngle(user_yaw, [0, 1, 0], user_angular_velocity[1] * 0.005);
 
-        //var user_attitude = glMatrix.quat.create();
-        //glMatrix.quat.multiply(user_attitude, user_pitch, user_roll);
-
+        // Multiply the three input quaternions together, against the current user rotation quaternion.
         glMatrix.quat.multiply(user_rotation, user_pitch, user_rotation);
         glMatrix.quat.multiply(user_rotation, user_roll, user_rotation);
         glMatrix.quat.multiply(user_rotation, user_yaw, user_rotation);
+
+        // Create a matrix representation of the new user rotation quat.
         var user_rot_matrix = glMatrix.mat4.create();
         glMatrix.mat4.fromQuat(user_rot_matrix, user_rotation);
 
+        // Apply user rotation quat to view matrix.
         glMatrix.mat4.multiply(viewMatrix, viewMatrix, user_rot_matrix);
 
+        // Flip the y-axis of the user position (for some reason it's negative in my world coordinates)
         var flipped_user_pos = glMatrix.vec3.fromValues(user_pos[0], -user_pos[1], user_pos[2]);
 
-        //glMatrix.mat4.lookAt(modelViewMatrix, eyePos, [0,1,0], [0,1,0]);
-        //glMatrix.mat4.rotateY(modelViewMatrix, modelViewMatrix, x/200);
+        // Translate the view matrix by the user position.
         glMatrix.mat4.translate(viewMatrix, viewMatrix, flipped_user_pos);
-        //glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-(terrain_dim * 0.1 * 0.5), 0, -(terrain_dim * 0.1 * 0.5)]);
-        
-        //glMatrix.mat4.scale(modelViewMatrix, modelViewMatrix, [1, -1, 1]);
 
+        // Init model matrix (this is just placeholder, not currently used)
         var modelMatrix = glMatrix.mat4.create();
 
+        // Init model-view matrix
         var modelViewMatrix = glMatrix.mat4.create();
 
+        // Construct model-view from model and view (duh)
         glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
-
-        
 
         // Construct normal matrix, which is simply the inverse transpose of the modelview.
         var normalMatrix = glMatrix.mat3.create();
@@ -259,6 +254,8 @@ terrain_demo = function() {
         }
     
         gl.useProgram(shaderProgram);
+
+        // Mark all of the uniforms
         shaderProgram.scaleFactor = gl.getUniformLocation(shaderProgram, "u_scaleFactor");
         shaderProgram.scaleFactor2 = gl.getUniformLocation(shaderProgram, "u_scaleFactor2");
         shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
@@ -272,7 +269,6 @@ terrain_demo = function() {
         shaderProgram.useBlinnPhong = gl.getUniformLocation(shaderProgram, "u_useBlinnPhong");
         shaderProgram.worldCameraPosition = gl.getUniformLocation(shaderProgram, "u_worldCameraPosition");
         shaderProgram.skyboxDraw = gl.getUniformLocation(shaderProgram, "u_skyboxDraw");
-
         shaderProgram.drawClouds = gl.getUniformLocation(shaderProgram, "u_drawClouds");
         shaderProgram.drawFog = gl.getUniformLocation(shaderProgram, "u_drawFog");
 
@@ -424,6 +420,8 @@ terrain_demo = function() {
             skyboxVertexPosArray[i] *= 20.0;
         }
         
+        // Construct the webGL buffers for the skybox mesh.
+
         skybox_vertexPositionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, skybox_vertexPositionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(skyboxVertexPosArray), drawMode);
@@ -482,6 +480,7 @@ terrain_demo = function() {
                                     3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute)
         
+        // Tell the shader we're currently NOT drawing the skybox
         gl.uniform1f(shaderProgram.skyboxDraw, 0.0);
         // Go draw 'em!
         gl.drawElements(gl.TRIANGLES, num_polys, gl.UNSIGNED_SHORT, 0);
