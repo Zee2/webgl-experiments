@@ -1,0 +1,181 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>MP3</title>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="mp3.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono&display=swap" rel="stylesheet">
+</head>
+ 
+<script id="box-shader-vs" type="x-shader/x-vertex">
+
+  precision mediump float;
+
+  attribute vec4 aVertexPosition;
+  attribute vec3 aVertexNormal;
+
+  attribute vec4 baseColor;
+
+  varying vec3 vNormal;
+  varying vec3 vEyePos;
+  varying vec4 vBaseColor;
+
+  uniform mat4 u_modelview;
+  uniform mat4 u_projection;
+  uniform mat3 u_normalMatrix;
+  
+  void main(void) {
+
+      vNormal = aVertexNormal;
+      gl_Position = u_projection * u_modelview * aVertexPosition;
+
+      vec4 vEyePos4 = (u_modelview * vec4(aVertexPosition.xyz, 1.0));
+      vEyePos = vEyePos4.xyz / vEyePos4.w;
+
+      vBaseColor = baseColor;
+  }
+  </script>
+    
+  <script id="box-shader-fs" type="x-shader/x-fragment">
+  precision mediump float;
+
+  varying vec4 vBaseColor;
+
+  uniform mat4 u_modelview;
+  uniform mat3 u_normalMatrix;
+
+  uniform float u_shininess;
+
+  varying vec4 vWorldPos;
+  varying vec3 vEyePos;
+  varying vec3 vNormal;
+
+  #define NUM_LIGHTS 1.
+  #define AMBIENT_STRENGTH 0.15
+  #define DIFFUSE_STRENGTH 0.9
+  #define SPEC_STRENGTH 0.4
+  #define time 0.
+
+  void main(void) {
+
+    // We declare all the temp variables for the lighting formula here
+    // so that we can seamlessly switch out the lighting algorithm
+    // without dealing with a mess of variable declarations
+    vec4 vLightPos4;
+    vec3 vectorToLightSource;
+    vec3 normalEye;
+    float diffuseLightWeightning;
+    vec3 reflectionVector;
+    vec3 viewVectorEye;
+    vec3 halfwayVector;
+    float rdotv;
+    float ndoth;
+    float diffuse;
+    float specWeighting;
+    vec4 phongColor;
+    vec3 vLightPos;
+
+    // Ambient light calculation
+    // We do it first, as it's common to both Phong and Blinn-Phong,
+    // and should not be done per-light (Only one ambient source!)
+    gl_FragColor = AMBIENT_STRENGTH * vBaseColor;
+
+    // Transform the normal (n) to eye coordinates
+    normalEye = normalize(u_normalMatrix * vNormal);
+    
+    // The camera in eye coordinates is located in the origin and is pointing
+    // along the negative z-axis. Calculate viewVector (v) 
+    // in eye coordinates as:
+    // (0.0, 0.0, 0.0) - vertexPositionEye3
+    viewVectorEye = -normalize(vEyePos);
+
+    for(float i = 0.; i < NUM_LIGHTS; i++){
+
+      vLightPos4 = (u_modelview * vec4(5.0*cos(time * 0.001 + ((2.*3.141)/NUM_LIGHTS) * i) + 7., 3.0, 5.0*sin(time * 0.001 + ((2.*3.141)/NUM_LIGHTS) * i) + 7., 1.0));
+      //vec4 vLightPos4 = (u_modelview * vec4(4.0, 2.0, 4.0, 1.0));
+      vLightPos = vLightPos4.xyz / vLightPos4.w;
+
+      // Calculate the vector (l) to the light source
+      vectorToLightSource = normalize(vLightPos - vEyePos);
+      
+      // Calculate n dot l for diffuse lighting
+      diffuseLightWeightning = max(dot(normalEye, 
+                                      vectorToLightSource), 0.0);
+                                        
+      // Calculate the reflection vector (r) that is needed for specular light
+      reflectionVector = normalize(reflect(-vectorToLightSource, 
+                                              normalEye));
+
+      // Calculate the halfway vector (h)
+      halfwayVector = (vectorToLightSource + viewVectorEye) / length(vectorToLightSource + viewVectorEye);
+
+      // RdotV, for phong model only
+      rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+
+      // NdotH, for blinn-phong
+      ndoth = max(dot(normalEye, halfwayVector), 0.0);
+
+      diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
+
+      specWeighting = pow(rdotv, u_shininess);
+      
+      
+      
+      // Perform the rest of the shading calculation.
+      // We don't do the ambient here, we already did it above (before the shading calculation)
+      gl_FragColor += vec4(((vec3(DIFFUSE_STRENGTH)*vBaseColor.xyz) * diffuse
+                        + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
+    }
+    
+    
+  }
+  </script>
+
+<body style = "font-family: roboto; color: rgb(0, 0, 0); background-color: #aed1ff" onload="startup();">
+  <div class = "header" >
+    <h1 style = "font-family: roboto mono; ">
+      CS418 MP2
+    </h1>
+    <p style = "font-family: roboto mono">
+      Finn Sinclair - 2019
+    </p>
+    
+    <div class="uiContainer">
+      <div class="ui">
+        <img src="controls.png" width="400">
+        <div class="slidecontainer">
+          <input type="range" min="10" max="500" value="100" class="slider" id="shininess"> Shininess
+        </div>
+        <div class="radiobutton">
+          <input type="radio" class="radiobutton" value="yes" name="use_blinnphong" checked> Use Blinn-Phong
+          <input type="radio" class="radiobutton" value="no" name="use_blinnphong"> Use Phong
+        </div>
+        <input type="checkbox" class="radiobutton" name="use_fog" checked> Render distance fog <br>
+        <input type="checkbox" class="radiobutton" name="use_clouds" unchecked> Render volumetric raymarched clouds <br>
+        <input type="checkbox" class="radiobutton" name="use_spinning" checked> Enable spinning lights!
+        <div class="sphereButton">
+          <input type="button" name="toggle_sphere" id="toggle_sphere"value="Toggle sphere material visualization"> 
+        </div>
+        
+      </div>
+    <div class="webgl-canvas">
+        <canvas class="canvas" id="myGLCanvas" width="1000" height = "600"></canvas>
+    </div>
+    
+    </div>
+  </div>
+  
+  
+  
+</body>
+
+<script src="scripts/gl-matrix.js"></script>   
+<script src="scripts/webgl-utils.js"></script>
+<script src="scripts/mouseControls.js"></script>
+<script src="scripts/keyboardControl.js"></script>
+<script src="scripts/simpleModeling.js"></script>
+<script src="scripts/helpers.js"></script>
+<script src="scripts/envmap_demo.js"></script>  
+<script src="scripts/mp3.js"></script>   
+
+</html>
