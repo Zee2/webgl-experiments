@@ -152,10 +152,12 @@ envmap_demo = function() {
         // Initialize view matrix.
         var viewMatrix = glMatrix.mat4.create();
 
-        glMatrix.mat4.lookAt(viewMatrix, [2*Math.cos(x),2*Math.sin(x),2], [0,0,0], [0,1,0]);
+        var eyePos = [2*Math.cos(x),2*Math.cos(x + Math.PI),2*Math.sin(x)];
+
+        glMatrix.mat4.lookAt(viewMatrix, eyePos, [0,0,0], [0,1,0]);
 
 
-        gl.uniform3fv(shaderProgram.uniforms["u_worldCameraPosition"], [2*Math.cos(x),2*Math.sin(x),2]);
+        gl.uniform3fv(shaderProgram.uniforms["u_worldCameraPosition"], eyePos);
 
         // Init model matrix (this is just placeholder, not currently used)
         var modelMatrix = glMatrix.mat4.create();
@@ -173,7 +175,7 @@ envmap_demo = function() {
         glMatrix.mat3.invert(normalMatrix, normalMatrix);
 
         var newViewMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.lookAt(newViewMatrix, [0,0,0], [-2*Math.cos(x),-2*Math.sin(x),-2], [0,1,0]);
+        glMatrix.mat4.lookAt(newViewMatrix, [0,0,0], [-2*Math.cos(x),-2*Math.cos(x + Math.PI), -2*Math.sin(x)], [0,1,0]);
 
         var invViewProjMatrix = glMatrix.mat4.create();
 
