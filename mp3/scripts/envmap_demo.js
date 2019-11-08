@@ -102,7 +102,7 @@ envmap_demo = function() {
         vertexIndexBuffer = bufferResult.indices;
         vertexNormalBuffer = bufferResult.normals;
         var rotateX = 0;
-        var dollyY = 1200;
+        var rotateY = 0;
         
         setupCubemap(faceInfos, gl);
         
@@ -117,8 +117,8 @@ envmap_demo = function() {
             // Draw scene, pass in buffers
             //draw(rotateX, dollyY * 0.001, bufferResult, boxShaderProgram, gl);
             
-            draw_sky(rotateX, dollyY * 0.001, bufferResult, skyShaderProgram, gl);
-            draw_model(rotateX, dollyY * 0.001, bufferResult, boxShaderProgram, gl);
+            draw_sky(rotateX * 0.01, rotateY * 0.01, bufferResult, skyShaderProgram, gl);
+            draw_model(rotateX * 0.01, rotateY * 0.01, bufferResult, boxShaderProgram, gl);
 
             gl.uniform1f(boxShaderProgram.uniforms["u_time"], now);
 
@@ -127,7 +127,8 @@ envmap_demo = function() {
 
             gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.0, 1.0, 1.0, 1.0]);
 
-            rotateX += 0.01;
+            rotateX += mouseVelX;
+            rotateX *= 0.9
             animationID = requestAnimationFrame(render);
         }
         animationID = requestAnimationFrame(render);
