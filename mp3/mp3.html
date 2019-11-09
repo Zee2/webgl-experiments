@@ -48,6 +48,8 @@
   uniform mat4 u_projection;
   uniform mat3 u_normalMatrix;
   
+  uniform mat3 u_modelMatrix3;
+  
   void main(void) {
 
       vNormal = aVertexNormal;
@@ -70,6 +72,7 @@
 
   uniform mat4 u_modelview;
   uniform mat3 u_normalMatrix;
+  uniform mat3 u_modelMatrix3;
 
   uniform float u_shininess;
 
@@ -154,17 +157,27 @@
   
 
     vec3 worldNormal = normalize(vNormal);
+    vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
     vec3 eyeToSurfaceDir = normalize(vPos - u_worldCameraPosition);
-    vec3 direction = reflect(eyeToSurfaceDir,worldNormal);
+    vec3 direction = reflect(eyeToSurfaceDir,rotatedNormal);
+
     
     vec3 newPos = vPos * 3.0;
     float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
     chess = fract(chess * 0.5);
 
+
+    
     if(chess < 0.3)
       gl_FragColor = textureCube(u_cubemap, direction);
     else
       gl_FragColor = textureCube(u_cubemap, direction, 5.);
+
+    //gl_FragColor = vec4(chess, chess, chess, 1.0);
+    
+    //gl_FragColor = mix(textureCube(u_cubemap, direction), textureCube(u_cubemap, direction, 5.), smoothstep(chess, 0.3, 0.35));
+
+    //gl_FragColor = vec4(u_modelMatrix3[0][0], 1.0, 1.0, 1.0);
     
   }
   </script>
