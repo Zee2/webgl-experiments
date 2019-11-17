@@ -10,6 +10,12 @@ var animationID;
  * @params void
  */
 function startup(){
+
+    var promise =  obj_loader.load_model("models/teapot.obj");
+    promise.then(() => {
+        console.log("Promise resolved");
+    });
+
     switchDemo("terrain");
 }
 

@@ -19,7 +19,7 @@ envmap_demo = function() {
      * Runs the environment mapping demo
      * @returns void
      */
-    var runDemo = function(){
+    var runDemo = async function(){
         
         // Set up WebGL context
         var canvas = document.getElementById("myGLCanvas");
@@ -97,7 +97,7 @@ envmap_demo = function() {
         
 
         // Setup buffers and extract references
-        var bufferResult = setupBuffers(gl.STATIC_DRAW, gl);
+        var bufferResult = await setupBuffers(gl.STATIC_DRAW, gl);
         vertexPositionBuffer = bufferResult.positions;
         vertexIndexBuffer = bufferResult.indices;
         vertexNormalBuffer = bufferResult.normals;
@@ -112,7 +112,6 @@ envmap_demo = function() {
         gl.uniform1i(skyShaderProgram.uniforms["u_cubemap"], 0);
 
         function render(now) {
-
 
             // Draw scene, pass in buffers
             //draw(rotateX, dollyY * 0.001, bufferResult, boxShaderProgram, gl);
@@ -153,7 +152,7 @@ envmap_demo = function() {
         // Initialize view matrix.
         var viewMatrix = glMatrix.mat4.create();
 
-        var eyePos = [2*Math.cos(x),2*Math.cos(x + Math.PI),2*Math.sin(x)];
+        var eyePos = [4*Math.cos(x),4*Math.cos(x + Math.PI),4*Math.sin(x)];
 
         glMatrix.mat4.lookAt(viewMatrix, eyePos, [0,0,0], [0,1,0]);
 
@@ -176,7 +175,7 @@ envmap_demo = function() {
         glMatrix.mat3.invert(normalMatrix, normalMatrix);
 
         var newViewMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.lookAt(newViewMatrix, [0,0,0], [-2*Math.cos(x),-2*Math.cos(x + Math.PI), -2*Math.sin(x)], [0,1,0]);
+        glMatrix.mat4.lookAt(newViewMatrix, [0,0,0], [-4*Math.cos(x),-24*Math.cos(x + Math.PI), -4*Math.sin(x)], [0,1,0]);
 
         var invViewProjMatrix = glMatrix.mat4.create();
 
@@ -241,35 +240,32 @@ envmap_demo = function() {
      * @param {WebGLRenderingContext} gl Reference to the WebGL context
      * @returns {object} Object with the position and index WebGLBuffers
      */
-    var setupBuffers = function(drawMode, gl){
-        // Various mesh data we will be generating.
-        var vertexNormals = [];
-        var modelData = [];
-        var modelIndices = [];
+    var setupBuffers = async function(drawMode, gl){
 
-        // Generate basic sphere. (Also generates element indices and normals)
-        sphereFromSubdivision(4, modelData, modelIndices, vertexNormals);
-        console.log(modelData.length/3 + " vertices");
-        console.log(modelIndices.length/3 + " triangles");
-        
         // Construct the actual WebGL buffers.
 
         var vertexPositionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(modelData), drawMode);
-
         var vertexIndexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(modelIndices), drawMode);
-
         var vertexNormalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), drawMode);
         
+        model = await obj_loader.load_model("models/teapot.obj");
+
+        console.log(model.vertices.length/3 + " vertices");
+        console.log(model.indices.length/3 + " triangles");
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.vertices), drawMode);
+        
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(model.indices), drawMode);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.normals), drawMode);
+
         return { positions: vertexPositionBuffer,
                  indices: vertexIndexBuffer,
                  normals: vertexNormalBuffer,
-                 numIndices: modelIndices.length };
+                 numIndices: model.indices.length };
     };
 
     /**
