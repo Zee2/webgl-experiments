@@ -58,6 +58,7 @@ envmap_demo = function() {
             "u_modelview",
             "u_projection",
             "u_normalMatrix",
+            "u_modelMatrix3",
             "u_shininess",
             "u_baseColor",
             "u_cubemap",
@@ -126,8 +127,17 @@ envmap_demo = function() {
 
             gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.0, 1.0, 1.0, 1.0]);
 
+            
             rotateX += mouseVelX;
-            rotateX *= 0.9
+            mouseVelX *= 0.95;
+            
+            var factor = ((Math.PI/2 - Math.abs(rotateY * 0.01)) / (Math.PI/2))
+            rotateY += 0.4 * mouseVelY * (1-Math.pow(1-factor, 6));;
+            mouseVelY *= 0.95 * (1-Math.pow(1-factor, 6));
+            rotateY = clamp(rotateY * 0.01, -Math.PI/2, Math.PI/2) * 100;
+            
+            
+
             animationID = requestAnimationFrame(render);
         }
         animationID = requestAnimationFrame(render);
@@ -152,15 +162,28 @@ envmap_demo = function() {
         // Initialize view matrix.
         var viewMatrix = glMatrix.mat4.create();
 
-        var eyePos = [4*Math.cos(x),4*Math.cos(x + Math.PI),4*Math.sin(x)];
+        
+        var eyePos = glMatrix.vec3.fromValues(0,0,4);
+
+        glMatrix.vec3.rotateX(eyePos, eyePos, [0,0,0], y);
+        glMatrix.vec3.rotateY(eyePos, eyePos, [0,0,0], -x);
 
         glMatrix.mat4.lookAt(viewMatrix, eyePos, [0,0,0], [0,1,0]);
+
+        //glMatrix.mat4.rotateY(viewMatrix, viewMatrix, x);
 
 
         gl.uniform3fv(shaderProgram.uniforms["u_worldCameraPosition"], eyePos);
 
-        // Init model matrix (this is just placeholder, not currently used)
+        // Init model matrix
         var modelMatrix = glMatrix.mat4.create();
+        
+        // Spin the model
+        glMatrix.mat4.rotateX(modelMatrix, modelMatrix, x);
+
+        var modelMatrix3 = glMatrix.mat3.create();
+        glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix);
+        //glMatrix.mat3.rotate(modelMatrix3, modelMatrix);
 
         // Init model-view matrix
         var modelViewMatrix = glMatrix.mat4.create();
@@ -174,8 +197,10 @@ envmap_demo = function() {
         glMatrix.mat3.transpose(normalMatrix, normalMatrix);
         glMatrix.mat3.invert(normalMatrix, normalMatrix);
 
-        var newViewMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.lookAt(newViewMatrix, [0,0,0], [-4*Math.cos(x),-24*Math.cos(x + Math.PI), -4*Math.sin(x)], [0,1,0]);
+        var newViewMatrix = glMatrix.mat4.clone(viewMatrix);
+        newViewMatrix[12] = 0;
+        newViewMatrix[13] = 0;
+        newViewMatrix[14] = 0;
 
         var invViewProjMatrix = glMatrix.mat4.create();
 
@@ -186,6 +211,7 @@ envmap_demo = function() {
             modelview: modelViewMatrix,
             invViewProj: invViewProjMatrix,
             projection: projectionMatrix,
+            model: modelMatrix3,
             normal: normalMatrix
         }
     };
@@ -324,6 +350,7 @@ envmap_demo = function() {
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_modelview"], false, matResult.modelview);
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_projection"], false, matResult.projection);
         gl.uniformMatrix3fv(shaderProgram.uniforms["u_normalMatrix"], false, matResult.normal);
+        gl.uniformMatrix3fv(shaderProgram.uniforms["u_modelMatrix3"], false, matResult.model);
 
         // Face culling is off by artistic choice, it looks kind of neat
         // to be able to see the underside of the terrain!
