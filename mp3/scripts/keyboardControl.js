@@ -30,19 +30,20 @@ document.onkeyup = (e) => {
 function compute_keyboard_input() {
     let modified = {};
 
-    if(pressed_keys["ArrowLeft"]){
+    if(pressed_keys["KeyA"]){
         roll_input += (-1.0 - roll_input) * 0.1;
         modified["x"] = true;
     }
-    if(pressed_keys["ArrowRight"]){
+    if(pressed_keys["KeyD"]){
         roll_input += (1.0 - roll_input) * 0.1;
+        console.log("Roll: " + roll_input);
         modified["x"] = true;
     }
-    if(pressed_keys["ArrowUp"]){
+    if(pressed_keys["KeyW"]){
         pitch_input += (1.0 - pitch_input) * 0.1;
         modified["y"] = true;
     }
-    if(pressed_keys["ArrowDown"]){
+    if(pressed_keys["KeyS"]){
         pitch_input += (-1.0 - pitch_input) * 0.1;
         modified["y"] = true;
     }

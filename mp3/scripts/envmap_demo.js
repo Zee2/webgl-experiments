@@ -5,9 +5,10 @@
 /** @global Toggle for whether to use the sphere visualization option */
 var useSphere = false;
 
-
-
-
+/** @global Model spinning angular velocity */
+var model_angular_velocity = glMatrix.vec3.create();
+/** @global Current model rotation quaternion */
+var model_rotation = glMatrix.quat.create();
 
 // This is not really a function, it's just the
 // mechanism for organizing the terrain demo as a
@@ -114,6 +115,16 @@ envmap_demo = function() {
 
         function render(now) {
 
+            compute_keyboard_input();
+
+            // Compute angular velocity delta (framerate based... ew)
+            model_angular_velocity[0] += pitch_input * 0.05;
+            model_angular_velocity[1] += yaw_input * 0.05;
+            model_angular_velocity[2] += roll_input * 0.05;
+
+            // Dampen angular velocity (also framerate based, yuck)
+            glMatrix.vec3.scale(model_angular_velocity, model_angular_velocity, 0.99);
+
             // Draw scene, pass in buffers
             //draw(rotateX, dollyY * 0.001, bufferResult, boxShaderProgram, gl);
             
@@ -123,7 +134,7 @@ envmap_demo = function() {
             gl.uniform1f(boxShaderProgram.uniforms["u_time"], now);
 
             // Set the uniform value for the shininess based on slider input.
-            gl.uniform1f(boxShaderProgram.uniforms["u_shininess"], document.getElementById("shininess").value);
+            gl.uniform1f(boxShaderProgram.uniforms["u_shininess"], 10 - document.getElementById("shininess").value * 0.01);
 
             gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.0, 1.0, 1.0, 1.0]);
 
@@ -157,13 +168,13 @@ envmap_demo = function() {
 
         // Construct perspective projection matrix.
         var projectionMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.perspective(projectionMatrix, Math.PI/3, gl.canvas.width/ gl.canvas.height, 0.01,40);
+        glMatrix.mat4.perspective(projectionMatrix, Math.PI/3, gl.canvas.width/ gl.canvas.height, 0.1,2000);
 
         // Initialize view matrix.
         var viewMatrix = glMatrix.mat4.create();
 
         
-        var eyePos = glMatrix.vec3.fromValues(0,0,4);
+        var eyePos = glMatrix.vec3.fromValues(0,0,8);
 
         glMatrix.vec3.rotateX(eyePos, eyePos, [0,0,0], y);
         glMatrix.vec3.rotateY(eyePos, eyePos, [0,0,0], -x);
@@ -175,21 +186,37 @@ envmap_demo = function() {
 
         gl.uniform3fv(shaderProgram.uniforms["u_worldCameraPosition"], eyePos);
 
-        // Init model matrix
-        var modelMatrix = glMatrix.mat4.create();
+        
         
         // Spin the model
-        glMatrix.mat4.rotateX(modelMatrix, modelMatrix, x);
+        // Create three quaternions, for each of the input axes.
+        var model_pitch = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(model_pitch, [1, 0, 0], model_angular_velocity[0] * 0.01);
+        var model_roll = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(model_roll, [0, 0, 1], model_angular_velocity[2] * 0.01);
+        var model_yaw = glMatrix.quat.create();
+        glMatrix.quat.setAxisAngle(model_yaw, [0, 1, 0], model_angular_velocity[1] * 0.005);
 
+        // Multiply the three input quaternions together, against the current user rotation quaternion.
+        glMatrix.quat.multiply(model_rotation, model_pitch, model_rotation);
+        glMatrix.quat.multiply(model_rotation, model_roll, model_rotation);
+        glMatrix.quat.multiply(model_rotation, model_yaw, model_rotation);
+
+        var rotate_quat = glMatrix.mat4.create();
+        glMatrix.mat4.fromQuat(rotate_quat, model_rotation);
+
+        // Init model matrix
+        var modelMatrix4 = glMatrix.mat4.create();
+        glMatrix.mat4.multiply(modelMatrix4, modelMatrix4, rotate_quat);
+        glMatrix.mat4.translate(modelMatrix4, modelMatrix4, glMatrix.vec3.fromValues(0, -2, 0));
         var modelMatrix3 = glMatrix.mat3.create();
-        glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix);
-        //glMatrix.mat3.rotate(modelMatrix3, modelMatrix);
+        glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix4);
 
         // Init model-view matrix
         var modelViewMatrix = glMatrix.mat4.create();
 
         // Construct model-view from model and view (duh)
-        glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+        glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix4);
 
         // Construct normal matrix, which is simply the inverse transpose of the modelview.
         var normalMatrix = glMatrix.mat3.create();
@@ -274,11 +301,15 @@ envmap_demo = function() {
         var vertexIndexBuffer = gl.createBuffer();
         var vertexNormalBuffer = gl.createBuffer();
         
+        
         model = await obj_loader.load_model("models/teapot.obj");
 
         console.log(model.vertices.length/3 + " vertices");
         console.log(model.indices.length/3 + " triangles");
 
+        normals = compute_normals(model.vertices, model.indices);
+
+        
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.vertices), drawMode);
         
@@ -286,8 +317,9 @@ envmap_demo = function() {
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(model.indices), drawMode);
         
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.normals), drawMode);
-
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), drawMode);
+        
+        console.log(normals);
         return { positions: vertexPositionBuffer,
                  indices: vertexIndexBuffer,
                  normals: vertexNormalBuffer,
