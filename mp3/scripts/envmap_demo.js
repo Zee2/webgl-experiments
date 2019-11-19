@@ -145,12 +145,13 @@ envmap_demo = function() {
 
             switch(document.querySelector('input[name="shading"]:checked').value){
                 case "blinn-phong":
-                    console.log("Using blinnphong");
                     gl.uniform1i(boxShaderProgram.uniforms["u_use_blinnphong"], 1);
                     break;
-                case "cubemap":
-                    console.log("Using reflective");
+                case "reflect":
                     gl.uniform1i(boxShaderProgram.uniforms["u_use_reflective"], 1);
+                    break;
+                case "refract":
+                    gl.uniform1i(boxShaderProgram.uniforms["u_use_refractive"], 1);
                     break;
             }
 
@@ -161,9 +162,9 @@ envmap_demo = function() {
             mouseVelX *= 0.95;
             
             var factor = ((Math.PI/2 - Math.abs(rotateY * 0.01)) / (Math.PI/2))
-            rotateY += 0.4 * mouseVelY * (1-Math.pow(1-factor, 6));;
+            rotateY += 0.4 * mouseVelY * (1-Math.pow(1-factor, 6));
             mouseVelY *= 0.95 * (1-Math.pow(1-factor, 6));
-            rotateY = clamp(rotateY * 0.01, -Math.PI/3, Math.PI/3) * 100;
+            rotateY = clamp(rotateY * 0.01, -Math.PI/2.2, Math.PI/2.2) * 100;
             
             
 
@@ -226,7 +227,7 @@ envmap_demo = function() {
         // Init model matrix
         var modelMatrix4 = glMatrix.mat4.create();
         glMatrix.mat4.multiply(modelMatrix4, modelMatrix4, rotate_quat);
-        glMatrix.mat4.translate(modelMatrix4, modelMatrix4, glMatrix.vec3.fromValues(0, -2, 0));
+        //glMatrix.mat4.translate(modelMatrix4, modelMatrix4, glMatrix.vec3.fromValues(0, -2, 0));
         
         var modelMatrix3 = glMatrix.mat3.create();
         glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix4);

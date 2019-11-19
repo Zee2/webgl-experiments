@@ -161,27 +161,25 @@
                       + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
   
     gl_FragColor = phongColor;
-    if(u_use_reflective == 1){
+    if(u_use_reflective == 1 || u_use_refractive == 1){
       vec3 worldNormal = normalize(vNormal);
-      vec3 rotatedNormal =  normalize(u_modelMatrix3 * vNormal);
+      vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
       vec3 rotatedPos = u_modelMatrix3 * vPos;
       vec3 eyeToSurfaceDir = normalize(rotatedPos - u_worldCameraPosition);
-
-      vec3 direction = reflect(eyeToSurfaceDir,rotatedNormal);
-      //vec3 direction = refract(eyeToSurfaceDir,rotatedNormal, 0.94);
+      
+      vec3 direction;
+      if(u_use_reflective == 1){
+        direction = reflect(eyeToSurfaceDir,rotatedNormal);
+      } else {
+        direction = refract(eyeToSurfaceDir,rotatedNormal, 0.97);
+      }
 
       
       vec3 newPos = vPos * 0.5;
       float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
       chess = fract(chess * 0.5);
 
-      gl_FragColor = textureCube(u_cubemap, direction, u_shininess);
-
-      //gl_FragColor = vec4(chess, chess, chess, 1.0);
-      
-      //gl_FragColor = mix(textureCube(u_cubemap, direction), textureCube(u_cubemap, direction, 5.), smoothstep(chess, 0.3, 0.35));
-
-      //gl_FragColor = vec4(u_modelMatrix3[0][0], 1.0, 1.0, 1.0);
+      gl_FragColor = textureCube(u_cubemap, direction, u_shininess) + phongColor;
     }
     
     
@@ -208,7 +206,9 @@
         <div class="ui_item">
           <input type="radio" class="radiobutton" value="blinn-phong" name="shading" checked> Use Blinn-Phong
         </br>
-          <input type="radio" class="radiobutton" value="cubemap" name="shading"> Use Cubemap
+          <input type="radio" class="radiobutton" value="reflect" name="shading"> Use Reflective
+        </br>
+        <input type="radio" class="radiobutton" value="refract" name="shading"> Use Refractive
         </div>
       </div>
       <div class="webgl-canvas">
