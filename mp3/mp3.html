@@ -64,6 +64,11 @@
   <script id="box-shader-fs" type="x-shader/x-fragment">
   precision mediump float;
 
+  uniform int u_use_blinnphong;
+  uniform int u_use_reflective;
+  uniform int u_use_refractive;
+
+
   uniform samplerCube u_cubemap;
 
   uniform vec4 u_baseColor;
@@ -83,9 +88,9 @@
   varying vec3 vPos;
 
   #define NUM_LIGHTS 1.
-  #define AMBIENT_STRENGTH 0.0
-  #define DIFFUSE_STRENGTH 0.0
-  #define SPEC_STRENGTH 0.7
+  #define AMBIENT_STRENGTH 0.2
+  #define DIFFUSE_STRENGTH 0.4
+  #define SPEC_STRENGTH 0.9
 
   void main(void) {
 
@@ -120,7 +125,7 @@
     // (0.0, 0.0, 0.0) - vertexPositionEye3
     viewVectorEye = -normalize(vEyePos);
 
-    vLightPos4 = (u_modelview * vec4(2.0*cos(u_time * 0.001), 3.0, 2.0*sin(u_time * 0.001), 1.0));
+    vLightPos4 = (u_modelview * vec4(2.0*cos(u_time * 0.000), 3.0, 2.0*sin(u_time * 0.000), 1.0));
     //vec4 vLightPos4 = (u_modelview * vec4(4.0, 4.0, 4.0, 1.0));
     vLightPos = vLightPos4.xyz / vLightPos4.w;
 
@@ -146,33 +151,39 @@
 
     diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
 
-    specWeighting = pow(rdotv, u_shininess);
+    specWeighting = pow(rdotv, 10.);
     
     
     
     // Perform the rest of the shading calculation.
     // We don't do the ambient here, we already did it above (before the shading calculation)
-    phongColor += vec4(((vec3(DIFFUSE_STRENGTH)*u_baseColor.xyz) * diffuse
+    phongColor += AMBIENT_STRENGTH*u_baseColor + vec4(((vec3(DIFFUSE_STRENGTH)*u_baseColor.xyz) * diffuse
                       + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
   
+    gl_FragColor = phongColor;
+    if(u_use_reflective == 1){
+      vec3 worldNormal = normalize(vNormal);
+      vec3 rotatedNormal =  normalize(u_modelMatrix3 * vNormal);
+      vec3 rotatedPos = u_modelMatrix3 * vPos;
+      vec3 eyeToSurfaceDir = normalize(rotatedPos - u_worldCameraPosition);
 
-    vec3 worldNormal = normalize(vNormal);
-    vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
-    vec3 eyeToSurfaceDir = normalize(vPos - u_worldCameraPosition);
-    vec3 direction = reflect(eyeToSurfaceDir,rotatedNormal);
+      vec3 direction = reflect(eyeToSurfaceDir,rotatedNormal);
+      //vec3 direction = refract(eyeToSurfaceDir,rotatedNormal, 0.94);
 
+      
+      vec3 newPos = vPos * 0.5;
+      float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
+      chess = fract(chess * 0.5);
+
+      gl_FragColor = textureCube(u_cubemap, direction, u_shininess);
+
+      //gl_FragColor = vec4(chess, chess, chess, 1.0);
+      
+      //gl_FragColor = mix(textureCube(u_cubemap, direction), textureCube(u_cubemap, direction, 5.), smoothstep(chess, 0.3, 0.35));
+
+      //gl_FragColor = vec4(u_modelMatrix3[0][0], 1.0, 1.0, 1.0);
+    }
     
-    vec3 newPos = vPos * 0.5;
-    float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
-    chess = fract(chess * 0.5);
-
-    gl_FragColor = textureCube(u_cubemap, direction, u_shininess);
-
-    //gl_FragColor = vec4(chess, chess, chess, 1.0);
-    
-    //gl_FragColor = mix(textureCube(u_cubemap, direction), textureCube(u_cubemap, direction, 5.), smoothstep(chess, 0.3, 0.35));
-
-    //gl_FragColor = vec4(u_modelMatrix3[0][0], 1.0, 1.0, 1.0);
     
   }
   </script>

@@ -64,7 +64,10 @@ envmap_demo = function() {
             "u_baseColor",
             "u_cubemap",
             "u_worldCameraPosition",
-            "u_time"
+            "u_time",
+            "u_use_blinnphong",
+            "u_use_reflective",
+            "u_use_refractive"
         ]
         var boxShaderAttributes = [
             "aVertexPosition",
@@ -136,7 +139,22 @@ envmap_demo = function() {
             // Set the uniform value for the shininess based on slider input.
             gl.uniform1f(boxShaderProgram.uniforms["u_shininess"], 10 - document.getElementById("shininess").value * 0.01);
 
-            gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.0, 1.0, 1.0, 1.0]);
+            gl.uniform1i(boxShaderProgram.uniforms["u_use_blinnphong"], 0);
+            gl.uniform1i(boxShaderProgram.uniforms["u_use_reflective"], 0);
+            gl.uniform1i(boxShaderProgram.uniforms["u_use_refractive"], 0);
+
+            switch(document.querySelector('input[name="shading"]:checked').value){
+                case "blinn-phong":
+                    console.log("Using blinnphong");
+                    gl.uniform1i(boxShaderProgram.uniforms["u_use_blinnphong"], 1);
+                    break;
+                case "cubemap":
+                    console.log("Using reflective");
+                    gl.uniform1i(boxShaderProgram.uniforms["u_use_reflective"], 1);
+                    break;
+            }
+
+            gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.5, 0.5, 0.6, 1.0]);
 
             
             rotateX += mouseVelX;
@@ -145,7 +163,7 @@ envmap_demo = function() {
             var factor = ((Math.PI/2 - Math.abs(rotateY * 0.01)) / (Math.PI/2))
             rotateY += 0.4 * mouseVelY * (1-Math.pow(1-factor, 6));;
             mouseVelY *= 0.95 * (1-Math.pow(1-factor, 6));
-            rotateY = clamp(rotateY * 0.01, -Math.PI/2, Math.PI/2) * 100;
+            rotateY = clamp(rotateY * 0.01, -Math.PI/3, Math.PI/3) * 100;
             
             
 
@@ -209,6 +227,7 @@ envmap_demo = function() {
         var modelMatrix4 = glMatrix.mat4.create();
         glMatrix.mat4.multiply(modelMatrix4, modelMatrix4, rotate_quat);
         glMatrix.mat4.translate(modelMatrix4, modelMatrix4, glMatrix.vec3.fromValues(0, -2, 0));
+        
         var modelMatrix3 = glMatrix.mat3.create();
         glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix4);
 
