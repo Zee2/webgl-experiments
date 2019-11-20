@@ -76,6 +76,7 @@
   uniform vec3 u_worldCameraPosition;
 
   uniform mat4 u_modelview;
+  uniform mat4 u_lightTransform;
   uniform mat3 u_normalMatrix;
   uniform mat3 u_modelMatrix3;
 
@@ -89,7 +90,7 @@
 
   #define NUM_LIGHTS 1.
   #define AMBIENT_STRENGTH 0.2
-  #define DIFFUSE_STRENGTH 0.4
+  #define DIFFUSE_STRENGTH 0.9
   #define SPEC_STRENGTH 0.9
 
   void main(void) {
@@ -97,7 +98,7 @@
     // We declare all the temp variables for the lighting formula here
     // so that we can seamlessly switch out the lighting algorithm
     // without dealing with a mess of variable declarations
-    vec4 vLightPos4;
+    vec3 vLightPos;
     vec3 vectorToLightSource;
     vec3 normalEye;
     float diffuseLightWeightning;
@@ -109,51 +110,45 @@
     float diffuse;
     float specWeighting;
     vec4 phongColor;
-    vec3 vLightPos;
+    vLightPos = vec3(16.0*cos(u_time * 0.000), 10.0, 16.0*sin(u_time * 0.000));
+
+    vec3 worldNormal = normalize(vNormal);
+    vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
+    vec3 rotatedPos = u_modelMatrix3 * vPos;
+    vec3 eyeToSurfaceDir = normalize(rotatedPos - u_worldCameraPosition);
 
     // Ambient light calculation
     // We do it first, as it's common to both Phong and Blinn-Phong,
     // and should not be done per-light (Only one ambient source!)
     gl_FragColor = AMBIENT_STRENGTH * u_baseColor;
 
-    // Transform the normal (n) to eye coordinates
-    normalEye = normalize(u_normalMatrix * vNormal);
     
-    // The camera in eye coordinates is located in the origin and is pointing
-    // along the negative z-axis. Calculate viewVector (v) 
-    // in eye coordinates as:
-    // (0.0, 0.0, 0.0) - vertexPositionEye3
-    viewVectorEye = -normalize(vEyePos);
-
-    vLightPos4 = (u_modelview * vec4(2.0*cos(u_time * 0.000), 3.0, 2.0*sin(u_time * 0.000), 1.0));
     //vec4 vLightPos4 = (u_modelview * vec4(4.0, 4.0, 4.0, 1.0));
-    vLightPos = vLightPos4.xyz / vLightPos4.w;
+    //vLightPos = vLightPos4.xyz / vLightPos4.w;
 
     // Calculate the vector (l) to the light source
-    vectorToLightSource = normalize(vLightPos - vEyePos);
+    vectorToLightSource = normalize(vLightPos - rotatedPos);
     
     // Calculate n dot l for diffuse lighting
-    diffuseLightWeightning = max(dot(normalEye, 
+    diffuseLightWeightning = max(dot(rotatedNormal, 
                                     vectorToLightSource), 0.0);
                                       
     // Calculate the reflection vector (r) that is needed for specular light
-    reflectionVector = normalize(reflect(-vectorToLightSource, 
-                                            normalEye));
+    reflectionVector = normalize(reflect(vectorToLightSource, 
+                                          rotatedNormal));
 
     // Calculate the halfway vector (h)
-    halfwayVector = (vectorToLightSource + viewVectorEye) / length(vectorToLightSource + viewVectorEye);
+    halfwayVector = (vectorToLightSource + eyeToSurfaceDir) / length(vectorToLightSource + eyeToSurfaceDir);
 
     // RdotV, for phong model only
-    rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+    rdotv = max(dot(reflectionVector, eyeToSurfaceDir), 0.0);
 
     // NdotH, for blinn-phong
-    ndoth = max(dot(normalEye, halfwayVector), 0.0);
+    ndoth = max(dot(rotatedNormal, halfwayVector), 0.0);
 
-    diffuse = max(dot(normalEye, vectorToLightSource), 0.0);
+    diffuse = max(dot(rotatedNormal, vectorToLightSource), 0.0);
 
-    specWeighting = pow(rdotv, 10.);
-    
-    
+    specWeighting = pow(rdotv, 20.);
     
     // Perform the rest of the shading calculation.
     // We don't do the ambient here, we already did it above (before the shading calculation)
@@ -161,26 +156,22 @@
                       + (vec3(SPEC_STRENGTH)*vec3(1.0)) * specWeighting),1.0);
   
     gl_FragColor = phongColor;
-    if(u_use_reflective == 1 || u_use_refractive == 1){
-      vec3 worldNormal = normalize(vNormal);
-      vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
-      vec3 rotatedPos = u_modelMatrix3 * vPos;
-      vec3 eyeToSurfaceDir = normalize(rotatedPos - u_worldCameraPosition);
-      
-      vec3 direction;
-      if(u_use_reflective == 1){
-        direction = reflect(eyeToSurfaceDir,rotatedNormal);
-      } else {
-        direction = refract(eyeToSurfaceDir,rotatedNormal, 0.97);
-      }
-
-      
-      vec3 newPos = vPos * 0.5;
-      float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
-      chess = fract(chess * 0.5);
-
-      gl_FragColor = textureCube(u_cubemap, direction, u_shininess) + phongColor;
+    vec3 direction;
+    if(u_use_refractive == 1){
+      direction = refract(eyeToSurfaceDir,rotatedNormal, 0.97);
+    } else {
+      direction = reflect(eyeToSurfaceDir,rotatedNormal);
     }
+
+    
+    vec3 newPos = vPos * 0.5;
+    float chess = floor(newPos.x) + floor(newPos.y) + floor(newPos.z);
+    chess = fract(chess * 0.5);
+
+    if(u_use_reflective == 1 || u_use_refractive == 1)
+      gl_FragColor = textureCube(u_cubemap, direction, u_shininess) + phongColor * 0.5;
+    else
+      gl_FragColor = phongColor;
     
     
   }
@@ -189,7 +180,7 @@
 <body style = "font-family: roboto; color: #ffffff; background-color: #444444" onload="startup();">
   <div class = "header" >
     <h1 style = "font-family: roboto mono; ">
-      CS418 MP2
+      CS418 MP3
     </h1>
     <p style = "font-family: roboto mono">
       Finn Sinclair - 2019
