@@ -110,7 +110,7 @@
     float diffuse;
     float specWeighting;
     vec4 phongColor;
-    vLightPos = vec3(16.0*cos(u_time * 0.000), 10.0, 16.0*sin(u_time * 0.000));
+    vLightPos = vec3(5.0, 5.0, 5.0);
 
     vec3 worldNormal = normalize(vNormal);
     vec3 rotatedNormal =  normalize(u_modelMatrix3 * worldNormal);
@@ -189,7 +189,11 @@
     <div class="uiContainer">
       <div class = "controls">
         <div class="ui_item">
-          Controls: Orbit view with mouse input, rotate model with WASD
+          Controls:
+          <br>
+          Orbit view: Drag mouse
+          <br>
+          Rotate teapot: QE yaws, WS pitches, AD rolls
         </div>
         <div class="ui_item">
           <input type="range" min="0" max="1000" value="1000" class="slider" id="shininess"> Shininess
