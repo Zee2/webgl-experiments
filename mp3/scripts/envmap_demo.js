@@ -57,6 +57,7 @@ envmap_demo = function() {
         var boxShaderProgram; 
         var boxShaderUniforms = [
             "u_modelview",
+            "u_lightTransform",
             "u_projection",
             "u_normalMatrix",
             "u_modelMatrix3",
@@ -130,7 +131,7 @@ envmap_demo = function() {
 
             // Draw scene, pass in buffers
             //draw(rotateX, dollyY * 0.001, bufferResult, boxShaderProgram, gl);
-            
+
             draw_sky(rotateX * 0.01, rotateY * 0.01, bufferResult, skyShaderProgram, gl);
             draw_model(rotateX * 0.01, rotateY * 0.01, bufferResult, boxShaderProgram, gl);
 
@@ -254,12 +255,16 @@ envmap_demo = function() {
         glMatrix.mat4.multiply(invViewProjMatrix, projectionMatrix, newViewMatrix);
         glMatrix.mat4.invert(invViewProjMatrix, invViewProjMatrix);
 
+        var lightTransform = glMatrix.mat4.create();
+        glMatrix.mat4.invert(lightTransform, viewMatrix);
+
         return {
             modelview: modelViewMatrix,
             invViewProj: invViewProjMatrix,
             projection: projectionMatrix,
             model: modelMatrix3,
-            normal: normalMatrix
+            normal: normalMatrix,
+            lightTransform: lightTransform
         }
     };
     
@@ -400,6 +405,7 @@ envmap_demo = function() {
         var matResult = calculate_matrices(x, y, shaderProgram, gl);
 
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_modelview"], false, matResult.modelview);
+        gl.uniformMatrix4fv(shaderProgram.uniforms["u_lightTransform"], false, matResult.lightTransform);
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_projection"], false, matResult.projection);
         gl.uniformMatrix3fv(shaderProgram.uniforms["u_normalMatrix"], false, matResult.normal);
         gl.uniformMatrix3fv(shaderProgram.uniforms["u_modelMatrix3"], false, matResult.model);

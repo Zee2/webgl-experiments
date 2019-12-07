@@ -36,7 +36,6 @@ function compute_keyboard_input() {
     }
     if(pressed_keys["KeyD"]){
         roll_input += (1.0 - roll_input) * 0.1;
-        console.log("Roll: " + roll_input);
         modified["x"] = true;
     }
     if(pressed_keys["KeyW"]){

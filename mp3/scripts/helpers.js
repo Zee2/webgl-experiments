@@ -68,6 +68,10 @@ function loadShader(id, gl){
     return shader;
 }
 
+/**
+ *  Computes normals of mesh given vertices and indices
+ * @returns array of normals
+ */
 function compute_normals(vertices, indices){
 
     // Calculate vertex normals
