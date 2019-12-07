@@ -1,0 +1,48 @@
+.uiContainer {
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.controls{
+    display:flex;
+    max-width: 300px;
+    min-width: 230px;
+    flex-direction: column;
+    align-items: left;
+    justify-content: left;
+    margin: 20px;
+}
+
+#shininess{
+    float: center;
+}
+
+.canvas {
+    width: 100%;
+    min-width: 300px;
+    max-width: 2000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.header {
+    text-align: left;
+    padding-left: 60px;
+    padding-right: 60px;
+    padding-top: 20px;
+}
+
+body {
+    position: fixed;
+    margin: 0 auto;
+    text-align: center;
+    width: 100%;
+}
+
+.canvas {
+    text-align: center;
+    padding-top: 20px;
+}
