@@ -88,7 +88,7 @@
   varying vec3 vPos;
 
   #define NUM_LIGHTS 1.
-  #define AMBIENT_STRENGTH 0.2
+  #define AMBIENT_STRENGTH 0.3
   #define DIFFUSE_STRENGTH 0.4
   #define SPEC_STRENGTH 0.9
 
@@ -198,17 +198,10 @@
     <div class="uiContainer">
       <div class = "controls">
         <div class="ui_item">
-          Controls: Orbit view with mouse input, rotate model with WASD
+          Controls: Orbit view with mouse input
         </div>
         <div class="ui_item">
-          <input type="range" min="0" max="1000" value="1000" class="slider" id="shininess"> Shininess
-        </div>
-        <div class="ui_item">
-          <input type="radio" class="radiobutton" value="blinn-phong" name="shading" checked> Use Blinn-Phong
-        </br>
-          <input type="radio" class="radiobutton" value="reflect" name="shading"> Use Reflective
-        </br>
-        <input type="radio" class="radiobutton" value="refract" name="shading"> Use Refractive
+          <button type="button" id="clearbutton">Clear all balls</button>
         </div>
       </div>
       <div class="webgl-canvas">

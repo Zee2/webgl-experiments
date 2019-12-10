@@ -33,6 +33,10 @@ balls_demo = function() {
      * @returns void
      */
     var runDemo = async function(){
+
+        document.getElementById("clearbutton").onclick = () => {
+            balls = [];
+        }
         
         // Set up WebGL context
         var canvas = document.getElementById("myGLCanvas");
@@ -134,9 +138,6 @@ balls_demo = function() {
 
         function render(now) {
 
-            compute_keyboard_input();
-            //spawn_ball();
-
             compute_physics((now - last_time) * 0.001);
             last_time = now;
 
@@ -156,25 +157,9 @@ balls_demo = function() {
 
             gl.uniform1f(boxShaderProgram.uniforms["u_time"], now);
 
-            // Set the uniform value for the shininess based on slider input.
-            gl.uniform1f(boxShaderProgram.uniforms["u_shininess"], 10 - document.getElementById("shininess").value * 0.01);
-
             gl.uniform1i(boxShaderProgram.uniforms["u_use_blinnphong"], 0);
             gl.uniform1i(boxShaderProgram.uniforms["u_use_reflective"], 0);
             gl.uniform1i(boxShaderProgram.uniforms["u_use_refractive"], 0);
-
-            switch(document.querySelector('input[name="shading"]:checked').value){
-                case "blinn-phong":
-                    gl.uniform1i(boxShaderProgram.uniforms["u_use_blinnphong"], 1);
-                    break;
-                case "reflect":
-                    gl.uniform1i(boxShaderProgram.uniforms["u_use_reflective"], 1);
-                    break;
-                case "refract":
-                    gl.uniform1i(boxShaderProgram.uniforms["u_use_refractive"], 1);
-                    break;
-            }
-
             gl.uniform4fv(boxShaderProgram.uniforms["u_baseColor"], [0.5, 0.5, 0.6, 1.0]);
 
             
@@ -196,16 +181,17 @@ balls_demo = function() {
     var spawn_ball = function(){
         balls.push(new Ball(Math.random() * 12.0 - 6.0, Math.random() * 12.0, Math.random() * 12.0 - 6.0,
                             Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0));
-        console.log("spawned, new length = " + balls);
+    }
+
+    var clear_balls = function(){
+        balls = [];
     }
 
     var compute_physics = function(time_delta){
 
-        
-
         balls.forEach((ball) => {
 
-            let radius = 1.0;
+            let radius = ball.radius;
             
             // Perform drag integration
             glMatrix.vec3.multiply(ball.vel, ball.vel, glMatrix.vec3.fromValues(Math.pow(0.15,time_delta),Math.pow(0.15,time_delta),Math.pow(0.15,time_delta)));
@@ -233,13 +219,6 @@ balls_demo = function() {
         });
     }
 
-    var collide = function(ball){
-        
-
-        return flag;
-    }
-
-
     /**
      * Calculates transformation matrices and applies them to the given
      * shader program.
@@ -249,7 +228,7 @@ balls_demo = function() {
      * @param {WebGLRenderingContext} gl Reference to the WebGL context
      * @returns set of matrices
      */
-    var calculate_matrices = function(x, y, ballpos, shaderProgram, gl){
+    var calculate_matrices = function(x, y, ballpos, ballradius, shaderProgram, gl){
 
         // Construct perspective projection matrix.
         var projectionMatrix = glMatrix.mat4.create();
@@ -294,6 +273,7 @@ balls_demo = function() {
         var modelMatrix4 = glMatrix.mat4.create();
         glMatrix.mat4.multiply(modelMatrix4, modelMatrix4, rotate_quat);
         glMatrix.mat4.translate(modelMatrix4, modelMatrix4, ballpos);
+        glMatrix.mat4.scale(modelMatrix4, modelMatrix4, glMatrix.vec3.fromValues(ballradius,ballradius,ballradius));
         
         var modelMatrix3 = glMatrix.mat3.create();
         glMatrix.mat3.fromMat4(modelMatrix3, modelMatrix4);
@@ -459,7 +439,7 @@ balls_demo = function() {
         gl.useProgram(shaderProgram);
 
         // Compute the various matrices for this frame
-        var matResult = calculate_matrices(x, y, glMatrix.vec3.fromValues(0,0,0), shaderProgram, gl);
+        var matResult = calculate_matrices(x, y, glMatrix.vec3.fromValues(0,0,0), 1.0, shaderProgram, gl);
 
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_modelview"], false, matResult.modelview);
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_projection"], false, matResult.projection);
@@ -487,12 +467,11 @@ balls_demo = function() {
 
 
         balls.forEach((ball) => {
-            matResult = calculate_matrices(x, y, ball.pos, shaderProgram, gl);
+            matResult = calculate_matrices(x, y, ball.pos, ball.radius, shaderProgram, gl);
 
             gl.uniformMatrix4fv(shaderProgram.uniforms["u_modelview"], false, matResult.modelview);
             gl.uniformMatrix3fv(shaderProgram.uniforms["u_modelMatrix3"], false, matResult.model);
             gl.uniform4fv(shaderProgram.uniforms["u_baseColor"], [ball.color[0], ball.color[1], ball.color[2], 1.0]);
-            console.log(ball.pos);
             gl.drawElements(gl.TRIANGLES, buffers.numIndices, gl.UNSIGNED_SHORT, 0);
         });
         // Go draw 'em!
@@ -514,7 +493,7 @@ balls_demo = function() {
 
         gl.useProgram(shaderProgram);
 
-        var matResult = calculate_matrices(x, y, glMatrix.vec3.fromValues(0,0,0), shaderProgram, gl);
+        var matResult = calculate_matrices(x, y, glMatrix.vec3.fromValues(0,0,0), 1.0, shaderProgram, gl);
 
         gl.uniformMatrix4fv(shaderProgram.uniforms["u_vpInverse"], false, matResult.invViewProj);
 
