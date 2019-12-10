@@ -1,5 +1,5 @@
 /**
- * @fileoverview This file contains the 3D terrain demo with blinn-phong shading.
+ * @fileoverview This file contains the ball demo.
  */
 
 /** @global Toggle for whether to use the sphere visualization option */
@@ -13,6 +13,7 @@ var model_rotation = glMatrix.quat.create();
 /** @global Collection of balls */
 var balls = [];
 
+// Ball class, with constructor and random color + radius generation.
 class Ball {
     constructor(x,y,z, xv, yv, zv){
         this.pos = glMatrix.vec3.fromValues(x,y,z);
@@ -109,13 +110,6 @@ balls_demo = function() {
             alert("shader program is null");
         }
         
-        // WebGL buffer holding vertex positions
-        var vertexPositionBuffer;
-        // WebGL buffer holding indices
-        var vertexIndexBuffer;
-        // WebGL buffer holding normals
-        var vertexNormalBuffer;
-        
 
         // Setup buffers and extract references
         var bufferResult = await setupBuffers(gl.STATIC_DRAW, gl);
@@ -182,15 +176,21 @@ balls_demo = function() {
         animationID = requestAnimationFrame(render);
     };
 
+    /**
+     * Spawns a single ball with random position and velocity. (Random color and radius is handled
+     * by the ball class constructor.)
+     * @returns void
+     */
     var spawn_ball = function(){
         balls.push(new Ball(Math.random() * 12.0 - 6.0, Math.random() * 12.0, Math.random() * 12.0 - 6.0,
                             Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0));
     }
 
-    var clear_balls = function(){
-        balls = [];
-    }
-
+    /**
+     * Computes a rudimentary physics sim, iterating over each ball in the current ball array.
+     * @param {number} time_delta Per-frame delta-time in seconds.
+     * @returns void
+     */
     var compute_physics = function(time_delta){
 
         balls.forEach((ball) => {
