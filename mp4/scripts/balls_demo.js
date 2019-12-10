@@ -138,6 +138,10 @@ balls_demo = function() {
 
         function render(now) {
 
+            if(mouseState){
+                spawn_ball();
+            }
+
             compute_physics((now - last_time) * 0.001);
             last_time = now;
 

@@ -30,7 +30,6 @@ document.body.ontouchend = () => {
 /** OnMouseDown callback lambda */
 document.body.onmousedown = (e) => {
     mouseState++
-    balls_demo.spawn_ball();
 }
 /** OnTouchStart callback lambda */
 document.body.ontouchstart = (e) => {
