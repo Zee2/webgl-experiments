@@ -2,7 +2,7 @@
 //-------------------------------------------------------
 // Global variables
 var eyePoint = glMatrix.vec3.fromValues(0,0,0);
-var lightPosition = glMatrix.vec3.fromValues(0,1,0);
+var lightPosition = glMatrix.vec3.fromValues(5,-1,0);
 var lightColor = glMatrix.vec3.fromValues(1,1,1);
 
 // The sphere
@@ -90,18 +90,21 @@ function blinnPhongReflect(V,N,L,lightColor, surfaceColor, shininess)
  glMatrix.vec3.scale(shade,shade,diffuseWeight*255);
  glMatrix.vec3.floor(shade,shade);
 
+ // Compute H and NdotH
  var half = glMatrix.vec3.create();
  glMatrix.vec3.add(half, L, V);
  var LV = glMatrix.vec3.create();
  glMatrix.vec3.add(LV, L, V);
  var LVmag = glMatrix.vec3.length(LV);
-
- glMatrix.vec3.divide(half, half, LVmag);
+ glMatrix.vec3.scale(half, half, 1/LVmag);
 
  var NdotH = glMatrix.vec3.dot(N,half);
 
- console.log(half);
+ // Exponentiate NdotH for the specular higlight
+ var spec = Math.pow(NdotH, 40.0);
 
+ // Add the specular highlight
+ glMatrix.vec3.add(shade, shade, glMatrix.vec3.fromValues(spec * 255, spec * 255, spec * 255));
     
   return [shade[0],shade[1],shade[2],255];
 }
